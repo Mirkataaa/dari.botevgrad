@@ -1,10 +1,19 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { ArrowRight, Heart, Users, Target } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import CampaignCard from "@/components/campaigns/CampaignCard";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { getActiveCampaigns, getFeaturedCampaigns } from "@/data/mockCampaigns";
+
+import hero1 from "@/assets/hero/hero-1.jpg";
+import hero2 from "@/assets/hero/hero-2.jpeg";
+import hero3 from "@/assets/hero/hero-3.jpg";
+import hero4 from "@/assets/hero/hero-4.jpg";
+import hero5 from "@/assets/hero/hero-5.jpg";
+
+const heroImages = [hero1, hero2, hero3, hero4, hero5];
 
 const stats = [
   { icon: Heart, label: "Кампании", value: "6" },
@@ -15,12 +24,34 @@ const stats = [
 const Index = () => {
   const featured = getFeaturedCampaigns();
   const active = getActiveCampaigns();
+  const [currentImage, setCurrentImage] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary to-primary/80 py-20 text-primary-foreground md:py-28">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,hsl(140_50%_90%/0.1),transparent_70%)]" />
+      <section className="relative overflow-hidden py-20 text-primary-foreground md:py-28">
+        {/* Background images */}
+        <AnimatePresence mode="popLayout">
+          <motion.img
+            key={currentImage}
+            src={heroImages[currentImage]}
+            alt=""
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        </AnimatePresence>
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
         <div className="container relative">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -28,10 +59,10 @@ const Index = () => {
             transition={{ duration: 0.6 }}
             className="mx-auto max-w-2xl text-center"
           >
-            <h1 className="font-heading text-4xl font-extrabold leading-tight md:text-5xl lg:text-6xl">
+            <h1 className="font-heading text-4xl font-extrabold leading-tight drop-shadow-lg md:text-5xl lg:text-6xl">
               Заедно за Ботевград
             </h1>
-            <p className="mt-4 text-lg leading-relaxed opacity-90 md:text-xl">
+            <p className="mt-4 text-lg leading-relaxed opacity-90 drop-shadow-md md:text-xl">
               Дарителска платформа на Община Ботевград. Подкрепете каузите, които правят нашия град по-добро място за живеене.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
