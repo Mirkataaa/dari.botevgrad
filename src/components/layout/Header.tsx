@@ -21,11 +21,9 @@ const Header = () => {
       <div className="container flex h-16 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Heart className="h-5 w-5" />
-          </div>
+          <img src={crestLogo} alt="Герб на Ботевград" className="h-8 w-auto sm:h-10 md:h-12" />
           <div className="hidden sm:block">
-            <span className="font-heading text-lg font-bold text-foreground">dari.botevgrad.bg</span>
+            <span className="font-heading text-lg font-bold text-foreground">Заедно за Ботевград</span>
             <p className="text-xs text-muted-foreground">Дарителска платформа</p>
           </div>
         </Link>
