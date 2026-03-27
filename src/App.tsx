@@ -15,6 +15,8 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
+import OrgOrAdminRoute from "@/components/admin/OrgOrAdminRoute";
+import CreateCampaign from "./pages/CreateCampaign";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import AdminDonations from "./pages/admin/AdminDonations";
@@ -38,6 +40,7 @@ const App = () => (
             <Route element={<Layout><CompletedCampaigns /></Layout>} path="/completed" />
             <Route element={<Layout><CampaignDetails /></Layout>} path="/campaign/:id" />
             <Route element={<Layout><About /></Layout>} path="/about" />
+            <Route element={<OrgOrAdminRoute><Layout><CreateCampaign /></Layout></OrgOrAdminRoute>} path="/campaigns/create" />
             <Route element={<Layout><Login /></Layout>} path="/login" />
             <Route element={<Layout><Register /></Layout>} path="/register" />
             <Route element={<Layout><ResetPassword /></Layout>} path="/reset-password" />

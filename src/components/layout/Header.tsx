@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, LogIn, LogOut, User, ShieldCheck } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User, ShieldCheck, PlusCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,6 +29,16 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const [canCreate, setCanCreate] = useState(false);
+
+  useEffect(() => {
+    if (!user) { setCanCreate(false); return; }
+    const check = async () => {
+      const { data } = await supabase.from("profiles").select("is_organization, organization_verified").eq("id", user.id).single();
+      setCanCreate(!!data?.is_organization && !!data?.organization_verified);
+    };
+    check();
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -96,6 +107,12 @@ const Header = () => {
                       <DropdownMenuItem onClick={() => navigate("/admin")}>
                         <ShieldCheck className="mr-2 h-4 w-4" />
                         Админ панел
+                      </DropdownMenuItem>
+                    )}
+                    {(isAdmin || canCreate) && (
+                      <DropdownMenuItem onClick={() => navigate("/campaigns/create")}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Създай кампания
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />
