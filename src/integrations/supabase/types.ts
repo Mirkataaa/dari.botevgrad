@@ -65,6 +65,7 @@ export type Database = {
           target_amount: number
           title: string
           updated_at: string
+          videos: string[] | null
         }
         Insert: {
           category: Database["public"]["Enums"]["campaign_category"]
@@ -81,6 +82,7 @@ export type Database = {
           target_amount: number
           title: string
           updated_at?: string
+          videos?: string[] | null
         }
         Update: {
           category?: Database["public"]["Enums"]["campaign_category"]
@@ -97,6 +99,7 @@ export type Database = {
           target_amount?: number
           title?: string
           updated_at?: string
+          videos?: string[] | null
         }
         Relationships: []
       }
