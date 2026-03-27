@@ -14,16 +14,262 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaign_updates: {
+        Row: {
+          campaign_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          campaign_id: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          campaign_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_updates_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          category: Database["public"]["Enums"]["campaign_category"]
+          created_at: string
+          created_by: string | null
+          current_amount: number
+          deadline: string | null
+          description: string
+          documents: string[] | null
+          id: string
+          images: string[] | null
+          short_description: string | null
+          status: Database["public"]["Enums"]["campaign_status"]
+          target_amount: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["campaign_category"]
+          created_at?: string
+          created_by?: string | null
+          current_amount?: number
+          deadline?: string | null
+          description: string
+          documents?: string[] | null
+          id?: string
+          images?: string[] | null
+          short_description?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          target_amount: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["campaign_category"]
+          created_at?: string
+          created_by?: string | null
+          current_amount?: number
+          deadline?: string | null
+          description?: string
+          documents?: string[] | null
+          id?: string
+          images?: string[] | null
+          short_description?: string | null
+          status?: Database["public"]["Enums"]["campaign_status"]
+          target_amount?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          campaign_id: string
+          content: string
+          created_at: string
+          id: string
+          is_suggestion: boolean | null
+          likes_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          campaign_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_suggestion?: boolean | null
+          likes_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          campaign_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_suggestion?: boolean | null
+          likes_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      donations: {
+        Row: {
+          amount: number
+          campaign_id: string
+          created_at: string
+          donor_id: string | null
+          donor_name: string | null
+          id: string
+          is_anonymous: boolean | null
+          status: string
+          stripe_payment_id: string | null
+          stripe_session_id: string | null
+        }
+        Insert: {
+          amount: number
+          campaign_id: string
+          created_at?: string
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          status?: string
+          stripe_payment_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string
+          created_at?: string
+          donor_id?: string | null
+          donor_name?: string | null
+          id?: string
+          is_anonymous?: boolean | null
+          status?: string
+          stripe_payment_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          is_organization: boolean | null
+          organization_name: string | null
+          organization_verified: boolean | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          is_organization?: boolean | null
+          organization_name?: string | null
+          organization_verified?: boolean | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          is_organization?: boolean | null
+          organization_name?: string | null
+          organization_verified?: boolean | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
+      campaign_category:
+        | "social"
+        | "healthcare"
+        | "education"
+        | "culture"
+        | "ecology"
+        | "infrastructure"
+      campaign_status:
+        | "pending"
+        | "active"
+        | "completed"
+        | "rejected"
+        | "stopped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +396,23 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+      campaign_category: [
+        "social",
+        "healthcare",
+        "education",
+        "culture",
+        "ecology",
+        "infrastructure",
+      ],
+      campaign_status: [
+        "pending",
+        "active",
+        "completed",
+        "rejected",
+        "stopped",
+      ],
+    },
   },
 } as const
