@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, X, Loader2, FileUp, Video } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -48,9 +48,12 @@ const CreateCampaign = () => {
   const [deadline, setDeadline] = useState("");
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [documents, setDocuments] = useState<File[]>([]);
+  const [videoUrls, setVideoUrls] = useState<string[]>([""]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // --- Image handling ---
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (images.length + files.length > 5) {
@@ -58,17 +61,10 @@ const CreateCampaign = () => {
       return;
     }
     const validFiles = files.filter(f => {
-      if (f.size > 5 * 1024 * 1024) {
-        toast({ variant: "destructive", title: `${f.name} е твърде голям (макс. 5MB)` });
-        return false;
-      }
-      if (!f.type.startsWith("image/")) {
-        toast({ variant: "destructive", title: `${f.name} не е изображение` });
-        return false;
-      }
+      if (f.size > 5 * 1024 * 1024) { toast({ variant: "destructive", title: `${f.name} е твърде голям (макс. 5MB)` }); return false; }
+      if (!f.type.startsWith("image/")) { toast({ variant: "destructive", title: `${f.name} не е изображение` }); return false; }
       return true;
     });
-
     setImages(prev => [...prev, ...validFiles]);
     validFiles.forEach(f => {
       const reader = new FileReader();
@@ -83,15 +79,48 @@ const CreateCampaign = () => {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const uploadImages = async (): Promise<string[]> => {
+  // --- Document handling ---
+  const handleDocAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (documents.length + files.length > 5) {
+      toast({ variant: "destructive", title: "Максимум 5 документа" });
+      return;
+    }
+    const validFiles = files.filter(f => {
+      if (f.size > 10 * 1024 * 1024) { toast({ variant: "destructive", title: `${f.name} е твърде голям (макс. 10MB)` }); return false; }
+      return true;
+    });
+    setDocuments(prev => [...prev, ...validFiles]);
+    e.target.value = "";
+  };
+
+  const removeDocument = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // --- Video URL handling ---
+  const handleVideoUrlChange = (index: number, value: string) => {
+    setVideoUrls(prev => prev.map((v, i) => i === index ? value : v));
+  };
+
+  const addVideoUrl = () => {
+    if (videoUrls.length < 3) setVideoUrls(prev => [...prev, ""]);
+  };
+
+  const removeVideoUrl = (index: number) => {
+    setVideoUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // --- Upload helpers ---
+  const uploadFiles = async (files: File[], bucket: string): Promise<string[]> => {
     if (!user) return [];
     const urls: string[] = [];
-    for (const file of images) {
+    for (const file of files) {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error } = await supabase.storage.from("campaign-images").upload(path, file);
+      const { error } = await supabase.storage.from(bucket).upload(path, file);
       if (error) throw error;
-      const { data: urlData } = supabase.storage.from("campaign-images").getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
       urls.push(urlData.publicUrl);
     }
     return urls;
@@ -121,10 +150,12 @@ const CreateCampaign = () => {
 
     setSubmitting(true);
     try {
-      let imageUrls: string[] = [];
-      if (images.length > 0) {
-        imageUrls = await uploadImages();
-      }
+      const [imageUrls, docUrls] = await Promise.all([
+        images.length > 0 ? uploadFiles(images, "campaign-images") : Promise.resolve([]),
+        documents.length > 0 ? uploadFiles(documents, "campaign-documents") : Promise.resolve([]),
+      ]);
+
+      const cleanVideoUrls = videoUrls.filter(v => v.trim().length > 0);
 
       const { error } = await supabase.from("campaigns").insert({
         title: parsed.data.title,
@@ -134,9 +165,11 @@ const CreateCampaign = () => {
         target_amount: parsed.data.target_amount,
         deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
         images: imageUrls,
+        documents: docUrls,
+        videos: cleanVideoUrls,
         created_by: user!.id,
         status: "pending",
-      });
+      } as any);
 
       if (error) throw error;
 
@@ -228,6 +261,60 @@ const CreateCampaign = () => {
                     <span className="mt-1 text-xs">Добави</span>
                     <input type="file" accept="image/*" multiple className="hidden" onChange={handleImageAdd} />
                   </label>
+                )}
+              </div>
+            </div>
+
+            {/* Documents */}
+            <div className="space-y-2">
+              <Label>Документи (до 5, по избор)</Label>
+              <p className="text-xs text-muted-foreground">PDF, Word, Excel и други документи до 10MB</p>
+              <div className="space-y-2">
+                {documents.map((doc, i) => (
+                  <div key={i} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                    <FileUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm truncate flex-1">{doc.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{(doc.size / 1024 / 1024).toFixed(1)} MB</span>
+                    <button type="button" onClick={() => removeDocument(i)} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {documents.length < 5 && (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-3 text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                    <FileUp className="h-5 w-5" />
+                    <span className="text-sm">Добави документ</span>
+                    <input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" multiple className="hidden" onChange={handleDocAdd} />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            {/* Video URLs */}
+            <div className="space-y-2">
+              <Label>Видео клипове (до 3, по избор)</Label>
+              <p className="text-xs text-muted-foreground">Добавете линкове към YouTube или друга видео платформа</p>
+              <div className="space-y-2">
+                {videoUrls.map((url, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Input
+                      value={url}
+                      onChange={e => handleVideoUrlChange(i, e.target.value)}
+                      placeholder="https://www.youtube.com/watch?v=..."
+                      className="flex-1"
+                    />
+                    {videoUrls.length > 1 && (
+                      <button type="button" onClick={() => removeVideoUrl(i)} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {videoUrls.length < 3 && (
+                  <Button type="button" variant="outline" size="sm" onClick={addVideoUrl} className="gap-1">
+                    <Video className="h-4 w-4" /> Добави видео линк
+                  </Button>
                 )}
               </div>
             </div>
