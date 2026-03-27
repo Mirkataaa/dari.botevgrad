@@ -65,7 +65,7 @@ serve(async (req) => {
       line_items: [
         {
           price_data: {
-            currency: "bgn",
+            currency: "eur",
             product_data: {
               name: `Дарение за: ${campaign.title}`,
               description: isAnonymous ? "Анонимно дарение" : undefined,
