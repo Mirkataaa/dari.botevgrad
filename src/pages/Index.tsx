@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import CampaignCard from "@/components/campaigns/CampaignCard";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { getActiveCampaigns, getFeaturedCampaigns } from "@/data/mockCampaigns";
+import { useCampaigns, useCampaignStats } from "@/hooks/useCampaigns";
 
 import hero1 from "@/assets/hero/hero-1.jpg";
 import hero2 from "@/assets/hero/hero-2.jpeg";
@@ -15,16 +15,11 @@ import hero5 from "@/assets/hero/hero-5.jpg";
 
 const heroImages = [hero1, hero2, hero3, hero4, hero5];
 
-const stats = [
-  { icon: Heart, label: "Кампании", value: "6" },
-  { icon: Users, label: "Дарители", value: "120+" },
-  { icon: Target, label: "Събрани средства", value: "45 950 лв." },
-];
-
 const Index = () => {
-  const featured = getFeaturedCampaigns();
-  const active = getActiveCampaigns();
+  const { data: activeCampaigns = [] } = useCampaigns("active");
+  const { data: stats } = useCampaignStats();
   const [currentImage, setCurrentImage] = useState(0);
+  const featured = activeCampaigns.slice(0, 3);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,11 +28,16 @@ const Index = () => {
     return () => clearInterval(interval);
   }, []);
 
+  const statItems = [
+    { icon: Heart, label: "Кампании", value: String(stats?.campaignCount || 0) },
+    { icon: Users, label: "Дарители", value: stats?.donorCount ? `${stats.donorCount}+` : "0" },
+    { icon: Target, label: "Събрани средства", value: `${(stats?.totalRaised || 0).toLocaleString("bg-BG")} лв.` },
+  ];
+
   return (
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden py-20 text-primary-foreground md:py-28">
-        {/* Background images */}
         <AnimatePresence mode="popLayout">
           <motion.img
             key={currentImage}
@@ -50,7 +50,6 @@ const Index = () => {
             className="absolute inset-0 h-full w-full object-cover"
           />
         </AnimatePresence>
-        {/* Dark overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
         <div className="container relative">
           <motion.div
@@ -81,7 +80,7 @@ const Index = () => {
       <section className="border-b bg-card py-8">
         <div className="container">
           <div className="grid grid-cols-3 divide-x">
-            {stats.map((stat) => (
+            {statItems.map((stat) => (
               <div key={stat.label} className="flex flex-col items-center gap-1 px-4 text-center">
                 <stat.icon className="h-5 w-5 text-primary" />
                 <span className="font-heading text-xl font-bold md:text-2xl">{stat.value}</span>
@@ -93,53 +92,57 @@ const Index = () => {
       </section>
 
       {/* Carousel */}
-      <section className="py-12 md:py-16">
-        <div className="container">
-          <h2 className="font-heading text-2xl font-bold md:text-3xl">Активни кампании</h2>
-          <p className="mt-2 text-muted-foreground">Подкрепете кауза, която ви е близка</p>
+      {activeCampaigns.length > 0 && (
+        <section className="py-12 md:py-16">
+          <div className="container">
+            <h2 className="font-heading text-2xl font-bold md:text-3xl">Активни кампании</h2>
+            <p className="mt-2 text-muted-foreground">Подкрепете кауза, която ви е близка</p>
 
-          <div className="mt-8 px-12">
-            <Carousel opts={{ align: "start", loop: true }}>
-              <CarouselContent>
-                {active.map((campaign) => (
-                  <CarouselItem key={campaign.id} className="md:basis-1/2 lg:basis-1/3">
-                    <CampaignCard campaign={campaign} />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
-            </Carousel>
+            <div className="mt-8 px-12">
+              <Carousel opts={{ align: "start", loop: true }}>
+                <CarouselContent>
+                  {activeCampaigns.map((campaign) => (
+                    <CarouselItem key={campaign.id} className="md:basis-1/2 lg:basis-1/3">
+                      <CampaignCard campaign={campaign} />
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Featured grid */}
-      <section className="bg-secondary/50 py-12 md:py-16">
-        <div className="container">
-          <div className="flex items-end justify-between">
-            <div>
-              <h2 className="font-heading text-2xl font-bold md:text-3xl">Препоръчани кампании</h2>
-              <p className="mt-2 text-muted-foreground">Кампании, които се нуждаят от вашата помощ</p>
+      {featured.length > 0 && (
+        <section className="bg-secondary/50 py-12 md:py-16">
+          <div className="container">
+            <div className="flex items-end justify-between">
+              <div>
+                <h2 className="font-heading text-2xl font-bold md:text-3xl">Препоръчани кампании</h2>
+                <p className="mt-2 text-muted-foreground">Кампании, които се нуждаят от вашата помощ</p>
+              </div>
+              <Button asChild variant="ghost" className="hidden sm:flex">
+                <Link to="/active">
+                  Виж всички <ArrowRight className="ml-1 h-4 w-4" />
+                </Link>
+              </Button>
             </div>
-            <Button asChild variant="ghost" className="hidden sm:flex">
-              <Link to="/active">
-                Виж всички <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {featured.map((campaign) => (
+                <CampaignCard key={campaign.id} campaign={campaign} />
+              ))}
+            </div>
+            <div className="mt-6 text-center sm:hidden">
+              <Button asChild variant="outline">
+                <Link to="/active">Виж всички кампании</Link>
+              </Button>
+            </div>
           </div>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((campaign) => (
-              <CampaignCard key={campaign.id} campaign={campaign} />
-            ))}
-          </div>
-          <div className="mt-6 text-center sm:hidden">
-            <Button asChild variant="outline">
-              <Link to="/active">Виж всички кампании</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 };

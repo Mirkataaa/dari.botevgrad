@@ -4,20 +4,34 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CampaignProgress from "./CampaignProgress";
-import type { Campaign } from "@/data/mockCampaigns";
+import type { Campaign } from "@/hooks/useCampaigns";
+
+const categoryMap: Record<string, string> = {
+  social: "Социални",
+  healthcare: "Здравеопазване",
+  education: "Образование",
+  culture: "Култура",
+  ecology: "Екология",
+  infrastructure: "Инфраструктура",
+};
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
-  const { id, title, shortDescription, targetAmount, collectedAmount, isCompleted, category } = campaign;
+  const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
+  const isCompleted = status === "completed";
+  const imageUrl = images?.[0];
 
   return (
     <Card className="group overflow-hidden border-border/60 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
-      {/* Image placeholder */}
       <div className="relative aspect-[16/10] bg-secondary">
-        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-          <ImageIcon className="h-10 w-10" />
-        </div>
+        {imageUrl ? (
+          <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+            <ImageIcon className="h-10 w-10" />
+          </div>
+        )}
         <Badge className="absolute left-3 top-3 bg-card/90 text-foreground backdrop-blur-sm hover:bg-card">
-          {category}
+          {categoryMap[category] || category}
         </Badge>
         {isCompleted && (
           <Badge className="absolute right-3 top-3 bg-primary text-primary-foreground">
@@ -34,10 +48,10 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         </Link>
 
         <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
-          {shortDescription}
+          {short_description || ""}
         </p>
 
-        <CampaignProgress collected={collectedAmount} target={targetAmount} size="sm" />
+        <CampaignProgress collected={Number(current_amount)} target={Number(target_amount)} size="sm" />
 
         <div className="flex items-center gap-2 pt-1">
           <Button asChild className="flex-1" size="sm" disabled={isCompleted}>
