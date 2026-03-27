@@ -28,7 +28,7 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
   const handleDonate = async () => {
     const numAmount = Number(amount);
     if (!numAmount || numAmount < 1) {
-      toast({ variant: "destructive", title: "Въведете валидна сума (мин. 1 лв.)" });
+      toast({ variant: "destructive", title: "Въведете валидна сума (мин. 1 €)" });
       return;
     }
 
@@ -44,7 +44,7 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
 
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, "_blank");
+        window.location.href = data.url;
       }
     } catch (err: any) {
       toast({ variant: "destructive", title: "Грешка", description: err.message || "Неуспешно създаване на плащане" });
@@ -75,12 +75,12 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
                 size="sm"
                 onClick={() => setAmount(String(a))}
               >
-                {a} лв.
+                {a} €
               </Button>
             ))}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="custom-amount">Друга сума (лв.)</Label>
+            <Label htmlFor="custom-amount">Друга сума (€)</Label>
             <Input
               id="custom-amount"
               type="number"
@@ -104,7 +104,7 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
           )}
           <Button onClick={handleDonate} className="w-full" size="lg" disabled={loading || !amount}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Heart className="mr-2 h-4 w-4" />}
-            Дари {amount ? `${amount} лв.` : ""}
+            Дари {amount ? `${amount} €` : ""}
           </Button>
         </div>
       </DialogContent>

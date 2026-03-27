@@ -27,10 +27,10 @@ const CampaignProgress = ({ collected, target, size = "md", showLabels = true }:
       {showLabels && (
         <div className="mt-2 flex items-center justify-between text-sm">
           <span className="font-semibold text-foreground">
-            {collected.toLocaleString("bg-BG")} лв.
+            {collected.toLocaleString("bg-BG")} €
           </span>
           <span className="text-muted-foreground">
-            от {target.toLocaleString("bg-BG")} лв. ({Math.round(percentage)}%)
+            от {target.toLocaleString("bg-BG")} € ({Math.round(percentage)}%)
           </span>
         </div>
       )}

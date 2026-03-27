@@ -31,7 +31,7 @@ const Index = () => {
   const statItems = [
     { icon: Heart, label: "Кампании", value: String(stats?.campaignCount || 0) },
     { icon: Users, label: "Дарители", value: stats?.donorCount ? `${stats.donorCount}+` : "0" },
-    { icon: Target, label: "Събрани средства", value: `${(stats?.totalRaised || 0).toLocaleString("bg-BG")} лв.` },
+    { icon: Target, label: "Събрани средства", value: `${(stats?.totalRaised || 0).toLocaleString("bg-BG")} €` },
   ];
 
   return (
