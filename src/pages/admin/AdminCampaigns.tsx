@@ -40,7 +40,7 @@ const AdminCampaigns = () => {
 
   useEffect(() => { fetchCampaigns(); }, []);
 
-  const updateStatus = async (id: string, status: string) => {
+  const updateStatus = async (id: string, status: "pending" | "active" | "completed" | "rejected" | "stopped") => {
     const { error } = await supabase
       .from("campaigns")
       .update({ status })
