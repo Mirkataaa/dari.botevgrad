@@ -43,7 +43,7 @@ const AdminDashboard = () => {
   const statCards = [
     { label: "Активни кампании", value: stats.activeCampaigns, icon: Megaphone, color: "text-primary" },
     { label: "Чакащи одобрение", value: stats.pendingCampaigns, icon: TrendingUp, color: "text-amber-500" },
-    { label: "Общо дарения", value: `${stats.totalAmount.toLocaleString("bg-BG")} лв.`, icon: HandCoins, color: "text-emerald-600" },
+    { label: "Общо дарения", value: `${stats.totalAmount.toLocaleString("bg-BG")} €`, icon: HandCoins, color: "text-emerald-600" },
     { label: "Регистрирани потребители", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
   ];
 

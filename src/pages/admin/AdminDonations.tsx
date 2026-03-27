@@ -54,7 +54,7 @@ const AdminDonations = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-lg font-bold text-primary">
-                    {Number(donation.amount).toLocaleString("bg-BG")} лв.
+                    {Number(donation.amount).toLocaleString("bg-BG")} €
                   </span>
                   <Badge variant={donation.status === "completed" ? "default" : "secondary"}>
                     {donation.status === "completed" ? "Завършено" : donation.status === "pending" ? "Чакащо" : donation.status}

@@ -31,7 +31,7 @@ const campaignSchema = z.object({
   category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"], {
     required_error: "Изберете категория",
   }),
-  target_amount: z.number().min(100, "Минимална сума: 100 лв.").max(1000000, "Максимална сума: 1 000 000 лв."),
+  target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000, "Максимална сума: 1 000 000 €"),
   deadline: z.string().optional(),
 });
 
@@ -232,7 +232,7 @@ const CreateCampaign = () => {
 
             {/* Target amount */}
             <div className="space-y-2">
-              <Label htmlFor="target">Целева сума (лв.) *</Label>
+              <Label htmlFor="target">Целева сума (€) *</Label>
               <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} placeholder="10000" />
               {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
             </div>
