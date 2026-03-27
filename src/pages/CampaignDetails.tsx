@@ -118,7 +118,7 @@ const CampaignDetails = () => {
                           <p className="text-sm font-medium">{d.is_anonymous ? "Анонимен" : (d.donor_name || "Дарител")}</p>
                           <p className="mt-1 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("bg-BG")}</p>
                         </div>
-                        <span className="text-sm font-bold text-primary">{Number(d.amount)} лв.</span>
+                        <span className="text-sm font-bold text-primary">{Number(d.amount)} €</span>
                       </li>
                     ))}
                   </ul>

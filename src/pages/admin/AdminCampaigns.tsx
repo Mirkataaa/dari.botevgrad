@@ -102,7 +102,7 @@ const AdminCampaigns = () => {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {Number(campaign.current_amount).toLocaleString("bg-BG")} / {Number(campaign.target_amount).toLocaleString("bg-BG")} лв.
+                    {Number(campaign.current_amount).toLocaleString("bg-BG")} / {Number(campaign.target_amount).toLocaleString("bg-BG")} €
                   </p>
                 </div>
 
