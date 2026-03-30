@@ -33,11 +33,14 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
       return;
     }
 
+    const isEmbeddedPreview = window.self !== window.top;
+    const previewCheckoutWindow = isEmbeddedPreview ? window.open("", "_blank", "noopener,noreferrer") : null;
+
     setLoading(true);
     setError(null);
     try {
       console.log("[DonateButton] Invoking create-checkout...", { campaignId, amount: numAmount, isAnonymous });
-      
+
       const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
         body: {
           campaignId,
@@ -58,11 +61,20 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
 
       if (data?.url) {
         console.log("[DonateButton] Redirecting to:", data.url);
-        window.location.href = data.url;
+
+        if (previewCheckoutWindow && !previewCheckoutWindow.closed) {
+          previewCheckoutWindow.location.href = data.url;
+        } else {
+          window.location.assign(data.url);
+        }
       } else {
         throw new Error("Не беше получен линк за плащане");
       }
     } catch (err: any) {
+      if (previewCheckoutWindow && !previewCheckoutWindow.closed) {
+        previewCheckoutWindow.close();
+      }
+
       console.error("[DonateButton] Error:", err);
       const msg = err.message || "Неуспешно създаване на плащане";
       setError(msg);
@@ -71,19 +83,10 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
       setLoading(false);
     }
   };
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setError(null); }}>
-      <DialogTrigger asChild>
-        <Button className="flex-1" size="lg" disabled={disabled}>
-          <Heart className="mr-2 h-4 w-4" />
-          {disabled ? "Приключила" : "Дари сега"}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+...
         <DialogHeader>
           <DialogTitle>Дари за "{campaignTitle}"</DialogTitle>
-          <DialogDescription>Изберете сума и метод на плащане. Ще бъдете пренасочени към Stripe.</DialogDescription>
+          <DialogDescription>Изберете сума за дарение. След това ще бъдете пренасочени към Stripe.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div className="flex flex-wrap gap-2">
