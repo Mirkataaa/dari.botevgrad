@@ -1,5 +1,5 @@
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { LayoutDashboard, Megaphone, HandCoins, Users, MessageSquare, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, Megaphone, HandCoins, Users, MessageSquare, Mail, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const adminLinks = [
@@ -8,6 +8,7 @@ const adminLinks = [
   { to: "/admin/donations", label: "Дарения", icon: HandCoins },
   { to: "/admin/users", label: "Потребители", icon: Users },
   { to: "/admin/comments", label: "Коментари", icon: MessageSquare },
+  { to: "/admin/contacts", label: "Съобщения", icon: Mail },
 ];
 
 const AdminLayout = () => {

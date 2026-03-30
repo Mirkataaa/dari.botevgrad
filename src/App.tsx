@@ -23,6 +23,7 @@ import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import AdminDonations from "./pages/admin/AdminDonations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminComments from "./pages/admin/AdminComments";
+import AdminContacts from "./pages/admin/AdminContacts";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="donations" element={<AdminDonations />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="comments" element={<AdminComments />} />
+              <Route path="contacts" element={<AdminContacts />} />
             </Route>
 
             <Route path="*" element={<Layout><NotFound /></Layout>} />
