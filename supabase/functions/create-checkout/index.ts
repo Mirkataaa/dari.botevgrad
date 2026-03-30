@@ -82,8 +82,8 @@ serve(async (req) => {
         is_anonymous: String(isAnonymous),
         amount: String(amount),
       },
-      success_url: `${req.headers.get("origin")}/campaigns/${campaignId}?payment=success`,
-      cancel_url: `${req.headers.get("origin")}/campaigns/${campaignId}?payment=cancelled`,
+      success_url: `${req.headers.get("origin")}/campaign/${campaignId}?payment=success`,
+      cancel_url: `${req.headers.get("origin")}/campaign/${campaignId}?payment=cancelled`,
     });
 
     // Create pending donation record
