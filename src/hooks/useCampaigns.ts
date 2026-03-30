@@ -23,7 +23,7 @@ export const useCampaign = (id: string) => {
   return useQuery({
     queryKey: ["campaign", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("campaigns").select("*").eq("id", id).single();
+      const { data, error } = await supabase.from("campaigns").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
       return data;
     },

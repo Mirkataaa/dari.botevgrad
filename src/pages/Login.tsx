@@ -45,17 +45,20 @@ const Login = () => {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
+    const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
-    if (error) {
+    if (result.error) {
       toast({
         variant: "destructive",
         title: "Грешка при вход с Google",
-        description: String(error),
+        description: String(result.error),
       });
+      setGoogleLoading(false);
+    } else if (!result.redirected) {
+      // OAuth completed without redirect (token already set)
+      navigate("/");
     }
-    setGoogleLoading(false);
   };
 
   return (
