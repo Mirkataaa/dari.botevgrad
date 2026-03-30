@@ -52,9 +52,17 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
       if (data?.error) throw new Error(data.error);
       if (!data?.url) throw new Error("Не беше получен линк за плащане");
 
-      // Navigate top-level window — works both in iframe preview and standalone
-      const target = window.top || window;
-      target.location.href = data.url;
+      // Navigate to Stripe checkout — handle cross-origin iframe gracefully
+      try {
+        if (window.top && window.top !== window.self) {
+          window.top.location.href = data.url;
+        } else {
+          window.location.href = data.url;
+        }
+      } catch {
+        // Cross-origin iframe blocks top navigation — open in new tab
+        window.open(data.url, "_blank", "noopener,noreferrer");
+      }
     } catch (err: any) {
       const msg = err?.message || "Неуспешно създаване на плащане";
       console.error("[DonateButton] Error", msg);
