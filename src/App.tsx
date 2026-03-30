@@ -23,6 +23,7 @@ import AdminCampaigns from "./pages/admin/AdminCampaigns";
 import AdminDonations from "./pages/admin/AdminDonations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminComments from "./pages/admin/AdminComments";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
             <Route element={<Layout><Login /></Layout>} path="/login" />
             <Route element={<Layout><Register /></Layout>} path="/register" />
             <Route element={<Layout><ResetPassword /></Layout>} path="/reset-password" />
+            <Route element={<Layout><PaymentSuccess /></Layout>} path="/payment-success" />
 
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboard />} />
