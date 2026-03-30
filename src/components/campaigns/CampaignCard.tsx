@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
-import { Share2, ImageIcon } from "lucide-react";
+import { ImageIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CampaignProgress from "./CampaignProgress";
+import ShareWidget from "./ShareWidget";
 import type { Campaign } from "@/hooks/useCampaigns";
 
 const categoryMap: Record<string, string> = {
@@ -59,9 +60,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
               {isCompleted ? "Приключила" : "Дари сега"}
             </Link>
           </Button>
-          <Button variant="outline" size="icon" className="h-9 w-9 shrink-0">
-            <Share2 className="h-4 w-4" />
-          </Button>
+          <ShareWidget campaignId={id} campaignTitle={title} campaignImage={imageUrl} />
         </div>
       </CardContent>
     </Card>

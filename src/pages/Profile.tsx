@@ -1,29 +1,32 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Save, User, History, Lock } from "lucide-react";
+import { Loader2, Save, User, History, Lock, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate } from "react-router-dom";
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -69,11 +72,53 @@ const Profile = () => {
 
   if (!user) return <Navigate to="/login" replace />;
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast({ variant: "destructive", title: "Моля, изберете изображение" });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ variant: "destructive", title: "Максимален размер: 2MB" });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const filePath = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      // Append cache-buster
+      const newUrl = `${publicUrl}?t=${Date.now()}`;
+      setAvatarUrl(newUrl);
+
+      await supabase.from("profiles").update({ avatar_url: newUrl }).eq("id", user.id);
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
+      toast({ title: "Снимката е качена успешно" });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Грешка при качване", description: err.message });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSaveProfile = async () => {
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName.trim(), phone: phone.trim(), avatar_url: avatarUrl.trim() })
+      .update({ full_name: fullName.trim(), phone: phone.trim(), avatar_url: avatarUrl })
       .eq("id", user.id);
     setSaving(false);
     if (error) {
@@ -110,20 +155,35 @@ const Profile = () => {
       <p className="mt-2 text-muted-foreground">{user.email}</p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
-        {/* Profile info */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Лична информация</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-16 w-16 cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                 {avatarUrl && <AvatarImage src={avatarUrl} />}
                 <AvatarFallback className="text-lg">{(fullName || user.email || "?")[0].toUpperCase()}</AvatarFallback>
               </Avatar>
-              <div className="flex-1 space-y-1">
-                <Label htmlFor="avatar">URL на профилна снимка</Label>
-                <Input id="avatar" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} placeholder="https://..." />
+              <div className="flex-1 space-y-2">
+                <Label>Профилна снимка</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                  {uploading ? "Качване..." : "Качи снимка"}
+                </Button>
               </div>
             </div>
             <div className="space-y-1">
@@ -141,7 +201,6 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Password */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5" /> Промяна на парола</CardTitle>
@@ -163,7 +222,6 @@ const Profile = () => {
         </Card>
       </div>
 
-      {/* Donation history */}
       <Separator className="my-8" />
       <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
         <History className="h-5 w-5" /> История на дарения

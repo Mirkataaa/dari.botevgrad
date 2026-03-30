@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Heart, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -24,6 +24,7 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
   const [amount, setAmount] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDonate = async () => {
     const numAmount = Number(amount);
@@ -33,8 +34,11 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
     }
 
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase.functions.invoke("create-checkout", {
+      console.log("[DonateButton] Invoking create-checkout...", { campaignId, amount: numAmount, isAnonymous });
+      
+      const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
         body: {
           campaignId,
           amount: numAmount,
@@ -42,19 +46,34 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
         },
       });
 
-      if (error) throw error;
+      console.log("[DonateButton] Response:", { data, fnError });
+
+      if (fnError) {
+        throw new Error(fnError.message || "Грешка при създаване на плащане");
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       if (data?.url) {
+        console.log("[DonateButton] Redirecting to:", data.url);
         window.location.href = data.url;
+      } else {
+        throw new Error("Не беше получен линк за плащане");
       }
     } catch (err: any) {
-      toast({ variant: "destructive", title: "Грешка", description: err.message || "Неуспешно създаване на плащане" });
+      console.error("[DonateButton] Error:", err);
+      const msg = err.message || "Неуспешно създаване на плащане";
+      setError(msg);
+      toast({ variant: "destructive", title: "Грешка", description: msg });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setError(null); }}>
       <DialogTrigger asChild>
         <Button className="flex-1" size="lg" disabled={disabled}>
           <Heart className="mr-2 h-4 w-4" />
@@ -64,6 +83,7 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Дари за "{campaignTitle}"</DialogTitle>
+          <DialogDescription>Изберете сума и метод на плащане. Ще бъдете пренасочени към Stripe.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div className="flex flex-wrap gap-2">
@@ -101,6 +121,9 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
           </div>
           {!user && (
             <p className="text-xs text-muted-foreground">Може да дарите и без регистрация.</p>
+          )}
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
           )}
           <Button onClick={handleDonate} className="w-full" size="lg" disabled={loading || !amount}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Heart className="mr-2 h-4 w-4" />}
