@@ -44,7 +44,9 @@ const CampaignComments = ({ campaignId }: Props) => {
     },
     onSuccess: () => {
       setContent("");
+      // Force refetch to ensure the new comment appears
       queryClient.invalidateQueries({ queryKey: ["comments", campaignId] });
+      queryClient.refetchQueries({ queryKey: ["comments", campaignId] });
       toast({ title: "Коментарът е добавен" });
     },
     onError: (err: any) => {
