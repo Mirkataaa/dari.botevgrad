@@ -6,7 +6,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2025-08-27.basil",
 });
 
-const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")?.trim();
 
 serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
@@ -15,13 +15,20 @@ serve(async (req) => {
   let event: Stripe.Event;
 
   try {
-    if (endpointSecret && signature) {
-      event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
-    } else {
-      event = JSON.parse(body);
+    if (!endpointSecret) {
+      console.error("[stripe-webhook] STRIPE_WEBHOOK_SECRET is missing");
+      return new Response("Webhook Error: server is not configured", { status: 500 });
     }
-  } catch (err) {
-    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+
+    if (!signature) {
+      console.error("[stripe-webhook] Missing stripe-signature header");
+      return new Response("Webhook Error: missing signature", { status: 400 });
+    }
+
+    event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
+  } catch (err: any) {
+    console.error("[stripe-webhook] Signature verification failed:", err?.message || err);
+    return new Response(`Webhook Error: ${err?.message || "Invalid signature"}`, { status: 400 });
   }
 
   const supabase = createClient(
@@ -29,31 +36,61 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
-  if (event.type === "checkout.session.completed") {
+  console.log("[stripe-webhook] Event:", event.type);
+
+  if (
+    event.type === "checkout.session.completed" ||
+    event.type === "checkout.session.async_payment_succeeded"
+  ) {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    if (session.payment_status === "paid" && session.metadata?.campaign_id) {
-      const campaignId = session.metadata.campaign_id;
-      const amount = Number(session.metadata.amount);
+    if (session.payment_status === "paid") {
+      const stripePaymentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id || null;
 
-      // Update donation status
-      await supabase
+      // Update pending donation only once (idempotent for webhook retries)
+      const { data: updatedDonation, error: donationUpdateError } = await supabase
         .from("donations")
-        .update({ status: "completed", stripe_payment_id: session.payment_intent as string })
-        .eq("stripe_session_id", session.id);
+        .update({ status: "completed", stripe_payment_id: stripePaymentId })
+        .eq("stripe_session_id", session.id)
+        .eq("status", "pending")
+        .select("id, campaign_id, amount")
+        .maybeSingle();
 
-      // Update campaign current_amount
+      if (donationUpdateError) {
+        console.error("[stripe-webhook] Donation update error:", donationUpdateError.message);
+      }
+
+      // If no row was updated, it was already processed or session wasn't found
+      if (!updatedDonation) {
+        console.log("[stripe-webhook] No pending donation found for session:", session.id);
+        return new Response(JSON.stringify({ received: true }), {
+          headers: { "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
       const { data: campaign } = await supabase
         .from("campaigns")
         .select("current_amount")
-        .eq("id", campaignId)
+        .eq("id", updatedDonation.campaign_id)
         .single();
 
       if (campaign) {
+        const nextAmount = Number(campaign.current_amount) + Number(updatedDonation.amount);
         await supabase
           .from("campaigns")
-          .update({ current_amount: Number(campaign.current_amount) + amount })
-          .eq("id", campaignId);
+          .update({ current_amount: nextAmount })
+          .eq("id", updatedDonation.campaign_id);
+
+        console.log("[stripe-webhook] Donation completed:", {
+          donationId: updatedDonation.id,
+          campaignId: updatedDonation.campaign_id,
+          amount: updatedDonation.amount,
+          sessionId: session.id,
+        });
       }
     }
   }
