@@ -20,6 +20,7 @@ serve(async (req) => {
 
   try {
     const { campaignId, amount, isAnonymous } = await req.json();
+    console.log("[create-checkout] Request:", { campaignId, amount, isAnonymous });
 
     if (!campaignId || !amount || amount < 1) {
       throw new Error("Invalid campaign or amount");
@@ -57,7 +58,11 @@ serve(async (req) => {
       }
     }
 
-    const amountInStotinki = Math.round(amount * 100);
+    const amountInCents = Math.round(amount * 100);
+
+    // Determine origin for redirect URLs
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/+$/, "") || "https://dari.botevgrad.bg";
+    console.log("[create-checkout] Origin:", origin);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -70,7 +75,7 @@ serve(async (req) => {
               name: `Дарение за: ${campaign.title}`,
               description: isAnonymous ? "Анонимно дарение" : undefined,
             },
-            unit_amount: amountInStotinki,
+            unit_amount: amountInCents,
           },
           quantity: 1,
         },
@@ -82,9 +87,11 @@ serve(async (req) => {
         is_anonymous: String(isAnonymous),
         amount: String(amount),
       },
-      success_url: `${req.headers.get("origin")}/campaign/${campaignId}?payment=success`,
-      cancel_url: `${req.headers.get("origin")}/campaign/${campaignId}?payment=cancelled`,
+      success_url: `${origin}/campaign/${campaignId}?payment=success`,
+      cancel_url: `${origin}/campaign/${campaignId}?payment=cancelled`,
     });
+
+    console.log("[create-checkout] Session created:", session.id, session.url);
 
     // Create pending donation record
     const serviceClient = createClient(
@@ -107,6 +114,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
+    console.error("[create-checkout] Error:", error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

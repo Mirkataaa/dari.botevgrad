@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Share2, Copy, Check, Facebook, Twitter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -9,9 +9,10 @@ interface Props {
   campaignId: string;
   campaignTitle: string;
   campaignImage?: string;
+  size?: "sm" | "default";
 }
 
-const ShareWidget = ({ campaignId, campaignTitle, campaignImage }: Props) => {
+const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default" }: Props) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const url = `${window.location.origin}/campaign/${campaignId}`;
@@ -25,16 +26,31 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage }: Props) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleShare = async () => {
+    // Try native Web Share API first
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: campaignTitle, url });
+        return;
+      } catch {
+        // User cancelled or not supported — fall through to dialog
+      }
+    }
+  };
+
+  const btnClass = size === "sm" ? "h-9 w-9" : "h-11 w-11";
+
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className="h-11 w-11">
+        <Button variant="outline" size="icon" className={`${btnClass} shrink-0`} onClick={handleShare}>
           <Share2 className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Сподели кампанията</DialogTitle>
+          <DialogDescription>Изберете начин за споделяне на кампанията с приятели.</DialogDescription>
         </DialogHeader>
 
         {campaignImage && (
@@ -67,15 +83,6 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage }: Props) => {
           >
             <Twitter className="h-4 w-4" /> Twitter
           </Button>
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Embed код</p>
-          <Input
-            value={`<iframe src="${url}?embed=true" width="400" height="300" frameborder="0"></iframe>`}
-            readOnly
-            className="text-xs"
-          />
         </div>
       </DialogContent>
     </Dialog>
