@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Pause, Play } from "lucide-react";
+import { Check, X, Pause, Play, Search } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   pending: "Чакаща",
@@ -22,10 +23,21 @@ const statusColors: Record<string, string> = {
   stopped: "bg-gray-100 text-gray-800",
 };
 
+const categoryLabels: Record<string, string> = {
+  social: "Социални",
+  healthcare: "Здравеопазване",
+  education: "Образование",
+  culture: "Култура",
+  ecology: "Екология",
+  infrastructure: "Инфраструктура",
+};
+
 const AdminCampaigns = () => {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const { toast } = useToast();
 
   const fetchCampaigns = async () => {
@@ -33,7 +45,6 @@ const AdminCampaigns = () => {
       .from("campaigns")
       .select("*")
       .order("created_at", { ascending: false });
-
     if (!error) setCampaigns(data || []);
     setLoading(false);
   };
@@ -41,11 +52,7 @@ const AdminCampaigns = () => {
   useEffect(() => { fetchCampaigns(); }, []);
 
   const updateStatus = async (id: string, status: "pending" | "active" | "completed" | "rejected" | "stopped") => {
-    const { error } = await supabase
-      .from("campaigns")
-      .update({ status })
-      .eq("id", id);
-
+    const { error } = await supabase.from("campaigns").update({ status }).eq("id", id);
     if (error) {
       toast({ variant: "destructive", title: "Грешка", description: error.message });
     } else {
@@ -54,7 +61,17 @@ const AdminCampaigns = () => {
     }
   };
 
-  const filtered = filter === "all" ? campaigns : campaigns.filter((c) => c.status === filter);
+  const filtered = useMemo(() => {
+    return campaigns.filter((c) => {
+      if (filter !== "all" && c.status !== filter) return false;
+      if (categoryFilter !== "all" && c.category !== categoryFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!c.title.toLowerCase().includes(q) && !c.description.toLowerCase().includes(q)) return false;
+      }
+      return true;
+    });
+  }, [campaigns, filter, categoryFilter, search]);
 
   if (loading) {
     return (
@@ -68,21 +85,32 @@ const AdminCampaigns = () => {
     <div>
       <h1 className="mb-6 font-heading text-2xl font-bold">Управление на кампании</h1>
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap gap-2">
+      {/* Search */}
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Търсене..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      {/* Status filters */}
+      <div className="mb-2 flex flex-wrap gap-2">
         {["all", "pending", "active", "completed", "rejected", "stopped"].map((f) => (
-          <Button
-            key={f}
-            variant={filter === f ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(f)}
-          >
+          <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)}>
             {f === "all" ? "Всички" : statusLabels[f]}
-            {f !== "all" && (
-              <span className="ml-1 text-xs">
-                ({campaigns.filter((c) => c.status === f).length})
-              </span>
-            )}
+            {f !== "all" && <span className="ml-1 text-xs">({campaigns.filter((c) => c.status === f).length})</span>}
+          </Button>
+        ))}
+      </div>
+
+      {/* Category filters */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {["all", ...Object.keys(categoryLabels)].map((c) => (
+          <Button key={c} variant={categoryFilter === c ? "secondary" : "ghost"} size="sm" onClick={() => setCategoryFilter(c)}>
+            {c === "all" ? "Всички категории" : categoryLabels[c]}
           </Button>
         ))}
       </div>
@@ -102,7 +130,7 @@ const AdminCampaigns = () => {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {Number(campaign.current_amount).toLocaleString("bg-BG")} / {Number(campaign.target_amount).toLocaleString("bg-BG")} €
+                    {categoryLabels[campaign.category] || campaign.category} · {Number(campaign.current_amount).toLocaleString("bg-BG")} / {Number(campaign.target_amount).toLocaleString("bg-BG")} €
                   </p>
                 </div>
 

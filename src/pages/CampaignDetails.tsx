@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ImageIcon, Share2, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, ImageIcon, Calendar, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import CampaignProgress from "@/components/campaigns/CampaignProgress";
 import CampaignComments from "@/components/campaigns/CampaignComments";
 import CampaignUpdates from "@/components/campaigns/CampaignUpdates";
 import DonateButton from "@/components/campaigns/DonateButton";
+import ShareWidget from "@/components/campaigns/ShareWidget";
 import { useCampaign, useDonations } from "@/hooks/useCampaigns";
 
 const categoryMap: Record<string, string> = {
@@ -53,7 +54,6 @@ const CampaignDetails = () => {
       </Button>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main */}
         <div className="space-y-8 lg:col-span-2">
           <div className="aspect-video overflow-hidden rounded-xl bg-secondary">
             {imageUrl ? (
@@ -79,17 +79,11 @@ const CampaignDetails = () => {
           <p className="text-lg leading-relaxed text-muted-foreground">{campaign.description}</p>
 
           <Separator />
-
-          {/* Updates */}
           <CampaignUpdates campaignId={campaign.id} campaignCreatorId={campaign.created_by} />
-
           <Separator />
-
-          {/* Comments */}
           <CampaignComments campaignId={campaign.id} />
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <Card className="sticky top-20">
             <CardContent className="space-y-6 p-6">
@@ -97,9 +91,7 @@ const CampaignDetails = () => {
 
               <div className="flex gap-3">
                 <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isCompleted} />
-                <Button variant="outline" size="icon" className="h-11 w-11">
-                  <Share2 className="h-4 w-4" />
-                </Button>
+                <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={imageUrl} />
               </div>
 
               <Separator />
