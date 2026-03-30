@@ -10,6 +10,7 @@ import CampaignUpdates from "@/components/campaigns/CampaignUpdates";
 import DonateButton from "@/components/campaigns/DonateButton";
 import ShareWidget from "@/components/campaigns/ShareWidget";
 import { useCampaign, useDonations } from "@/hooks/useCampaigns";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
 const categoryMap: Record<string, string> = {
   social: "Социални",
@@ -24,6 +25,9 @@ const CampaignDetails = () => {
   const { id } = useParams();
   const { data: campaign, isLoading } = useCampaign(id || "");
   const { data: donations = [] } = useDonations(id);
+
+  useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"]]);
+  useRealtimeSync("donations", [["donations", id || ""]]);
 
   if (isLoading) {
     return (
