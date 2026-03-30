@@ -20,16 +20,36 @@ const CampaignComments = ({ campaignId }: Props) => {
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
 
-  const { data: comments = [], isLoading } = useQuery({
+  const { data: comments = [], isLoading, error: commentsError } = useQuery({
     queryKey: ["comments", campaignId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: commentsData, error: commentsQueryError } = await supabase
         .from("comments")
-        .select("*, profiles:user_id(full_name, avatar_url)")
+        .select("*")
         .eq("campaign_id", campaignId)
         .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
+
+      if (commentsQueryError) throw commentsQueryError;
+
+      const userIds = Array.from(new Set((commentsData ?? []).map((comment) => comment.user_id)));
+
+      if (userIds.length === 0) {
+        return commentsData ?? [];
+      }
+
+      const { data: profilesData, error: profilesQueryError } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", userIds);
+
+      if (profilesQueryError) throw profilesQueryError;
+
+      const profilesById = new Map((profilesData ?? []).map((profile) => [profile.id, profile]));
+
+      return (commentsData ?? []).map((comment) => ({
+        ...comment,
+        profiles: profilesById.get(comment.user_id) ?? null,
+      }));
     },
   });
 
@@ -105,6 +125,10 @@ const CampaignComments = ({ campaignId }: Props) => {
         <div className="flex justify-center py-6">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      ) : commentsError ? (
+        <p className="py-6 text-center text-sm text-destructive">
+          Неуспешно зареждане на коментарите. Опитайте отново след малко.
+        </p>
       ) : comments.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">Все още няма коментари. Бъдете първи!</p>
       ) : (
