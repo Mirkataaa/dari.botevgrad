@@ -40,47 +40,22 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
       return;
     }
 
-    const isEmbeddedPreview = window.self !== window.top;
-    const checkoutWindow = isEmbeddedPreview
-      ? window.open("", "_blank", "noopener,noreferrer")
-      : null;
-
     setLoading(true);
     setError(null);
 
     try {
-      console.log("[DonateButton] Invoking create-checkout", {
-        campaignId,
-        amount: numAmount,
-        isAnonymous,
-      });
-
       const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
-        body: {
-          campaignId,
-          amount: numAmount,
-          isAnonymous,
-        },
+        body: { campaignId, amount: numAmount, isAnonymous },
       });
 
       if (fnError) throw new Error(fnError.message || "Грешка при създаване на плащане");
       if (data?.error) throw new Error(data.error);
       if (!data?.url) throw new Error("Не беше получен линк за плащане");
 
-      console.log("[DonateButton] Redirecting to checkout", data.url);
-
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.location.href = data.url;
-      } else if (isEmbeddedPreview) {
-        window.open(data.url, "_blank", "noopener,noreferrer");
-      } else {
-        window.location.assign(data.url);
-      }
+      // Navigate top-level window — works both in iframe preview and standalone
+      const target = window.top || window;
+      target.location.href = data.url;
     } catch (err: any) {
-      if (checkoutWindow && !checkoutWindow.closed) {
-        checkoutWindow.close();
-      }
-
       const msg = err?.message || "Неуспешно създаване на плащане";
       console.error("[DonateButton] Error", msg);
       setError(msg);
