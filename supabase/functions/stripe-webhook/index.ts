@@ -25,7 +25,7 @@ serve(async (req) => {
       return new Response("Webhook Error: missing signature", { status: 400 });
     }
 
-    event = stripe.webhooks.constructEvent(body, signature, endpointSecret);
+    event = await stripe.webhooks.constructEventAsync(body, signature, endpointSecret);
   } catch (err: any) {
     console.error("[stripe-webhook] Signature verification failed:", err?.message || err);
     return new Response(`Webhook Error: ${err?.message || "Invalid signature"}`, { status: 400 });
