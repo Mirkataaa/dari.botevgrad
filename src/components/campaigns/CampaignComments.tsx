@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { MessageSquare, Trash2, Loader2 } from "lucide-react";
+import { MessageSquare, Trash2, Loader2, Pencil, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -19,6 +19,8 @@ const CampaignComments = ({ campaignId }: Props) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [content, setContent] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
 
   const { data: comments = [], isLoading, error: commentsError } = useQuery({
     queryKey: ["comments", campaignId],
@@ -31,24 +33,19 @@ const CampaignComments = ({ campaignId }: Props) => {
 
       if (commentsQueryError) throw commentsQueryError;
 
-      const userIds = Array.from(new Set((commentsData ?? []).map((comment) => comment.user_id)));
+      const userIds = Array.from(new Set((commentsData ?? []).map((c) => c.user_id)));
+      if (userIds.length === 0) return commentsData ?? [];
 
-      if (userIds.length === 0) {
-        return commentsData ?? [];
-      }
-
-      const { data: profilesData, error: profilesQueryError } = await supabase
+      const { data: profilesData } = await supabase
         .from("profiles")
         .select("id, full_name, avatar_url")
         .in("id", userIds);
 
-      if (profilesQueryError) throw profilesQueryError;
+      const profilesById = new Map((profilesData ?? []).map((p) => [p.id, p]));
 
-      const profilesById = new Map((profilesData ?? []).map((profile) => [profile.id, profile]));
-
-      return (commentsData ?? []).map((comment) => ({
-        ...comment,
-        profiles: profilesById.get(comment.user_id) ?? null,
+      return (commentsData ?? []).map((c) => ({
+        ...c,
+        profiles: profilesById.get(c.user_id) ?? null,
       }));
     },
   });
@@ -64,10 +61,28 @@ const CampaignComments = ({ campaignId }: Props) => {
     },
     onSuccess: () => {
       setContent("");
-      // Force refetch to ensure the new comment appears
       queryClient.invalidateQueries({ queryKey: ["comments", campaignId] });
       queryClient.refetchQueries({ queryKey: ["comments", campaignId] });
       toast({ title: "Коментарът е добавен" });
+    },
+    onError: (err: any) => {
+      toast({ variant: "destructive", title: "Грешка", description: err.message });
+    },
+  });
+
+  const updateComment = useMutation({
+    mutationFn: async ({ id, newContent }: { id: string; newContent: string }) => {
+      const { error } = await supabase
+        .from("comments")
+        .update({ content: newContent.trim() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setEditingId(null);
+      setEditContent("");
+      queryClient.invalidateQueries({ queryKey: ["comments", campaignId] });
+      toast({ title: "Коментарът е редактиран" });
     },
     onError: (err: any) => {
       toast({ variant: "destructive", title: "Грешка", description: err.message });
@@ -89,6 +104,16 @@ const CampaignComments = ({ campaignId }: Props) => {
     e.preventDefault();
     if (!content.trim()) return;
     addComment.mutate();
+  };
+
+  const startEditing = (comment: any) => {
+    setEditingId(comment.id);
+    setEditContent(comment.content);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditContent("");
   };
 
   return (
@@ -127,7 +152,7 @@ const CampaignComments = ({ campaignId }: Props) => {
         </div>
       ) : commentsError ? (
         <p className="py-6 text-center text-sm text-destructive">
-          Неуспешно зареждане на коментарите. Опитайте отново след малко.
+          Неуспешно зареждане на коментарите.
         </p>
       ) : comments.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">Все още няма коментари. Бъдете първи!</p>
@@ -147,6 +172,14 @@ const CampaignComments = ({ campaignId }: Props) => {
                     <span className="text-xs text-muted-foreground">
                       {new Date(c.created_at).toLocaleDateString("bg-BG")}
                     </span>
+                    {user?.id === c.user_id && editingId !== c.id && (
+                      <button
+                        onClick={() => startEditing(c)}
+                        className="text-muted-foreground transition-colors hover:text-primary"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     {(user?.id === c.user_id || isAdmin) && (
                       <button
                         onClick={() => deleteComment.mutate(c.id)}
@@ -157,7 +190,31 @@ const CampaignComments = ({ campaignId }: Props) => {
                     )}
                   </div>
                 </div>
-                <p className="text-sm leading-relaxed">{c.content}</p>
+                {editingId === c.id ? (
+                  <div className="space-y-2">
+                    <Textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      rows={2}
+                      maxLength={1000}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <Button type="button" variant="ghost" size="sm" onClick={cancelEditing}>
+                        <X className="mr-1 h-3.5 w-3.5" /> Отказ
+                      </Button>
+                      <Button
+                        size="sm"
+                        disabled={!editContent.trim() || updateComment.isPending}
+                        onClick={() => updateComment.mutate({ id: c.id, newContent: editContent })}
+                      >
+                        {updateComment.isPending ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1 h-3.5 w-3.5" />}
+                        Запази
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm leading-relaxed">{c.content}</p>
+                )}
               </div>
             </div>
           ))}
