@@ -87,7 +87,7 @@ serve(async (req) => {
         is_anonymous: String(isAnonymous),
         amount: String(amount),
       },
-      success_url: `${origin}/campaign/${campaignId}?payment=success`,
+      success_url: `${origin}/payment-success?campaign=${campaignId}`,
       cancel_url: `${origin}/campaign/${campaignId}?payment=cancelled`,
     });
 
