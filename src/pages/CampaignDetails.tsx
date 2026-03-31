@@ -76,7 +76,7 @@ const CampaignDetails = () => {
             <Badge variant="outline" className="gap-1">
               <Calendar className="h-3 w-3" />{new Date(campaign.created_at).toLocaleDateString("bg-BG")}
             </Badge>
-            {isCompleted && <Badge className="bg-primary text-primary-foreground">Приключила</Badge>}
+            {isClosed && <Badge className="bg-primary text-primary-foreground">{campaign.status === "closed" ? "Затворена" : "Приключила"}</Badge>}
           </div>
 
           <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
