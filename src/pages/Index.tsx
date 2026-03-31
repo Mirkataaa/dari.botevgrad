@@ -116,7 +116,7 @@ const Index = () => {
       )}
 
       {/* Featured grid */}
-      {featured.length > 0 && (
+      {recommended.length > 0 && (
         <section className="bg-secondary/50 py-12 md:py-16">
           <div className="container">
             <div className="flex items-end justify-between">
@@ -131,7 +131,7 @@ const Index = () => {
               </Button>
             </div>
             <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.map((campaign) => (
+              {recommended.map((campaign) => (
                 <CampaignCard key={campaign.id} campaign={campaign} />
               ))}
             </div>

@@ -94,7 +94,7 @@ const CampaignDetails = () => {
               <CampaignProgress collected={Number(campaign.current_amount)} target={Number(campaign.target_amount)} size="lg" />
 
               <div className="flex gap-3">
-                <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isCompleted} />
+                <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} />
                 <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={imageUrl} />
               </div>
 
