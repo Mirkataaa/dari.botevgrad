@@ -19,7 +19,7 @@ const Index = () => {
   const { data: activeCampaigns = [] } = useCampaigns("active");
   const { data: stats } = useCampaignStats();
   const [currentImage, setCurrentImage] = useState(0);
-  const featured = activeCampaigns.slice(0, 3);
+  const recommended = activeCampaigns.filter((c: any) => c.is_recommended);
 
   useEffect(() => {
     const interval = setInterval(() => {
