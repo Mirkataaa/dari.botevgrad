@@ -13,7 +13,15 @@ interface Props {
   foreignKey: "comment_id" | "update_id";
 }
 
-const VoteButtons = ({ targetId, table, foreignKey }: Props) => {
+interface Props {
+  targetId: string;
+  table: "comment_votes" | "update_votes";
+  foreignKey: "comment_id" | "update_id";
+  /** Parent query key to invalidate on vote change (for sorting) */
+  parentQueryKey?: string[];
+}
+
+const VoteButtons = ({ targetId, table, foreignKey, parentQueryKey }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
