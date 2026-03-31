@@ -58,6 +58,7 @@ const VoteButtons = ({ targetId, table, foreignKey, parentQueryKey }: Props) => 
         await (supabase as any).from(table).insert({ [foreignKey]: targetId, user_id: user.id, vote_type: type });
       }
       queryClient.invalidateQueries({ queryKey: [table, targetId] });
+      if (parentQueryKey) queryClient.invalidateQueries({ queryKey: parentQueryKey });
     } catch {
       toast({ variant: "destructive", title: "Грешка при гласуване" });
     } finally {

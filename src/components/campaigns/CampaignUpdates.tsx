@@ -123,7 +123,7 @@ const CampaignUpdates = ({ campaignId, campaignCreatorId }: Props) => {
                 </span>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">{u.content}</p>
-              <VoteButtons targetId={u.id} table="update_votes" foreignKey="update_id" />
+              <VoteButtons targetId={u.id} table="update_votes" foreignKey="update_id" parentQueryKey={["campaign-updates", campaignId]} />
             </div>
           ))}
         </div>
