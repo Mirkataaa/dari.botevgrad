@@ -48,7 +48,7 @@ const CampaignDetails = () => {
     );
   }
 
-  const isCompleted = campaign.status === "completed";
+  const isClosed = campaign.status === "completed" || campaign.status === "closed";
   const imageUrl = campaign.images?.[0];
 
   return (
