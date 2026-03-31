@@ -18,7 +18,7 @@ const categoryMap: Record<string, string> = {
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
-  const isCompleted = status === "completed";
+  const isClosed = status === "completed" || status === "closed";
   const imageUrl = images?.[0];
 
   return (
