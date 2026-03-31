@@ -34,9 +34,9 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         <Badge className="absolute left-3 top-3 bg-card/90 text-foreground backdrop-blur-sm hover:bg-card">
           {categoryMap[category] || category}
         </Badge>
-        {isCompleted && (
+        {isClosed && (
           <Badge className="absolute right-3 top-3 bg-primary text-primary-foreground">
-            Приключила
+            {status === "closed" ? "Затворена" : "Приключила"}
           </Badge>
         )}
       </div>
