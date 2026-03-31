@@ -36,7 +36,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         </Badge>
         {isClosed && (
           <Badge className="absolute right-3 top-3 bg-primary text-primary-foreground">
-            {status === "closed" ? "Затворена" : "Приключила"}
+            Приключила
           </Badge>
         )}
       </div>
@@ -57,7 +57,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         <div className="flex items-center gap-2 pt-1">
           <Button asChild className="flex-1" size="sm" disabled={isClosed}>
             <Link to={`/campaign/${id}`}>
-              {isClosed ? (status === "closed" ? "Затворена" : "Приключила") : "Дари сега"}
+              {isClosed ? "Приключила" : "Дари сега"}
             </Link>
           </Button>
           <ShareWidget campaignId={id} campaignTitle={title} campaignImage={imageUrl} />

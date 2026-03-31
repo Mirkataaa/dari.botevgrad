@@ -15,7 +15,7 @@ const statusLabels: Record<string, string> = {
   completed: "Завършена",
   rejected: "Отхвърлена",
   stopped: "Спряна",
-  closed: "Затворена",
+  closed: "Приключена",
 };
 
 const statusColors: Record<string, string> = {
@@ -147,7 +147,7 @@ const AdminCampaigns = () => {
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
                   {/* Recommended toggle */}
-                  {["active", "completed"].includes(campaign.status) && (
+                  {["active", "completed", "closed"].includes(campaign.status) && (
                     <div className="flex items-center gap-1.5">
                       <Switch
                         checked={!!campaign.is_recommended}
@@ -173,13 +173,18 @@ const AdminCampaigns = () => {
                         <Pause className="mr-1 h-4 w-4" /> Спри
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "closed")}>
-                        <Lock className="mr-1 h-4 w-4" /> Затвори
+                        <Lock className="mr-1 h-4 w-4" /> Приключи
                       </Button>
                     </>
                   )}
                   {campaign.status === "stopped" && (
                     <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "active")}>
                       <Play className="mr-1 h-4 w-4" /> Активирай
+                    </Button>
+                  )}
+                  {(campaign.status === "closed" || campaign.status === "completed") && (
+                    <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "active")}>
+                      <Play className="mr-1 h-4 w-4" /> Отвори отново
                     </Button>
                   )}
                 </div>
