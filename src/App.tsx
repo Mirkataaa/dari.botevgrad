@@ -49,6 +49,7 @@ const App = () => (
             <Route element={<Layout><Register /></Layout>} path="/register" />
             <Route element={<Layout><ResetPassword /></Layout>} path="/reset-password" />
             <Route element={<Layout><PaymentSuccess /></Layout>} path="/payment-success" />
+            <Route element={<Layout><Unsubscribe /></Layout>} path="/unsubscribe" />
 
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboard />} />
