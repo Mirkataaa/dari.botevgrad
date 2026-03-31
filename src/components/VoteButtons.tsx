@@ -22,7 +22,7 @@ const VoteButtons = ({ targetId, table, foreignKey }: Props) => {
   const { data: votes = [] } = useQuery({
     queryKey: [table, targetId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from(table)
         .select("user_id, vote_type")
         .eq(foreignKey, targetId);
@@ -43,14 +43,11 @@ const VoteButtons = ({ targetId, table, foreignKey }: Props) => {
     setBusy(true);
     try {
       if (myVote === type) {
-        // Remove vote
-        await supabase.from(table).delete().eq(foreignKey, targetId).eq("user_id", user.id);
+        await (supabase as any).from(table).delete().eq(foreignKey, targetId).eq("user_id", user.id);
       } else if (myVote) {
-        // Switch vote
-        await supabase.from(table).update({ vote_type: type }).eq(foreignKey, targetId).eq("user_id", user.id);
+        await (supabase as any).from(table).update({ vote_type: type }).eq(foreignKey, targetId).eq("user_id", user.id);
       } else {
-        // New vote
-        await supabase.from(table).insert({ [foreignKey]: targetId, user_id: user.id, vote_type: type });
+        await (supabase as any).from(table).insert({ [foreignKey]: targetId, user_id: user.id, vote_type: type });
       }
       queryClient.invalidateQueries({ queryKey: [table, targetId] });
     } catch {
