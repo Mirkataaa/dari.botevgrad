@@ -36,7 +36,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         </Badge>
         {isClosed && (
           <Badge className="absolute right-3 top-3 bg-primary text-primary-foreground">
-            {status === "closed" ? "Затворена" : "Приключила"}
+            Приключила
           </Badge>
         )}
       </div>
