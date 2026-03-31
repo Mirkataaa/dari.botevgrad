@@ -103,6 +103,38 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_votes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           campaign_id: string
@@ -250,6 +282,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      update_votes: {
+        Row: {
+          created_at: string
+          id: string
+          update_id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          update_id: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          update_id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "update_votes_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_updates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

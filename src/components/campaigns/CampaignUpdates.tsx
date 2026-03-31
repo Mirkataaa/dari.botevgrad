@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Megaphone, Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import VoteButtons from "@/components/VoteButtons";
 
 interface Props {
   campaignId: string;
@@ -122,6 +123,7 @@ const CampaignUpdates = ({ campaignId, campaignCreatorId }: Props) => {
                 </span>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">{u.content}</p>
+              <VoteButtons targetId={u.id} table="update_votes" foreignKey="update_id" />
             </div>
           ))}
         </div>

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useProfile } from "@/hooks/useProfile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import crestLogo from "@/assets/botevgrad-crest.jpg";
 
 const navLinks = [
@@ -29,16 +30,15 @@ const Header = () => {
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { profile } = useProfile();
   const [canCreate, setCanCreate] = useState(false);
 
   useEffect(() => {
     if (!user) { setCanCreate(false); return; }
-    const check = async () => {
-      const { data } = await supabase.from("profiles").select("is_organization, organization_verified").eq("id", user.id).single();
-      setCanCreate(!!data?.is_organization && !!data?.organization_verified);
-    };
-    check();
-  }, [user]);
+    if (profile) {
+      setCanCreate(!!profile.is_organization && !!profile.organization_verified);
+    }
+  }, [user, profile]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -46,17 +46,19 @@ const Header = () => {
   };
 
   const getInitials = () => {
-    const name = user?.user_metadata?.full_name || user?.email || "";
-    if (user?.user_metadata?.full_name) {
+    const name = profile?.full_name || user?.user_metadata?.full_name || user?.email || "";
+    if (profile?.full_name || user?.user_metadata?.full_name) {
       return name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
     }
     return name.charAt(0).toUpperCase();
   };
 
+  const avatarUrl = profile?.avatar_url;
+  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email;
+
   return (
     <header className="sticky top-0 z-50 border-b bg-card/80 backdrop-blur-md">
       <div className="container flex h-16 items-center justify-between">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5">
           <img src={crestLogo} alt="Герб на Ботевград" className="h-8 w-auto sm:h-10 md:h-12" />
           <div className="hidden sm:block">
@@ -65,7 +67,6 @@ const Header = () => {
           </div>
         </Link>
 
-        {/* Desktop nav */}
         <nav className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
             <Link
@@ -82,7 +83,6 @@ const Header = () => {
             </Link>
           ))}
 
-          {/* Auth buttons */}
           {!loading && (
             <>
               {user ? (
@@ -90,13 +90,12 @@ const Header = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="ml-2 gap-2">
                       <Avatar className="h-7 w-7">
+                        {avatarUrl && <AvatarImage src={avatarUrl} />}
                         <AvatarFallback className="bg-primary/10 text-xs text-primary font-semibold">
                           {getInitials()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="hidden lg:inline text-sm">
-                        {user.user_metadata?.full_name || user.email}
-                      </span>
+                      <span className="hidden lg:inline text-sm">{displayName}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
@@ -143,7 +142,6 @@ const Header = () => {
           )}
         </nav>
 
-        {/* Mobile toggle */}
         <Button
           variant="ghost"
           size="icon"
@@ -154,7 +152,6 @@ const Header = () => {
         </Button>
       </div>
 
-      {/* Mobile nav */}
       {mobileOpen && (
         <nav className="border-t bg-card p-4 md:hidden">
           <div className="flex flex-col gap-1">
@@ -174,14 +171,33 @@ const Header = () => {
               </Link>
             ))}
 
-            {/* Mobile auth */}
             {!loading && (
               <div className="mt-2 border-t pt-2">
                 {user ? (
                   <>
-                    <div className="px-3 py-2 text-xs text-muted-foreground">
-                      {user.user_metadata?.full_name || user.email}
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <Avatar className="h-6 w-6">
+                        {avatarUrl && <AvatarImage src={avatarUrl} />}
+                        <AvatarFallback className="text-xs">{getInitials()}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs text-muted-foreground">{displayName}</span>
                     </div>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" /> Админ панел
+                      </Link>
+                    )}
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+                    >
+                      <User className="mr-2 h-4 w-4" /> Моят профил
+                    </Link>
                     <button
                       onClick={() => { handleSignOut(); setMobileOpen(false); }}
                       className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-accent"

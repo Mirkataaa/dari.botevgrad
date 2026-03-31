@@ -8,20 +8,41 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Save, User, History, Lock, Upload } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+
+const statusLabels: Record<string, string> = {
+  active: "Активна",
+  completed: "Приключена",
+  pending: "Чакаща",
+  rejected: "Отхвърлена",
+  stopped: "Спряна",
+};
+
+const statusColors: Record<string, string> = {
+  active: "bg-primary/10 text-primary",
+  completed: "bg-blue-100 text-blue-700",
+  pending: "bg-yellow-100 text-yellow-700",
+  rejected: "bg-destructive/10 text-destructive",
+  stopped: "bg-muted text-muted-foreground",
+};
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAdmin } = useIsAdmin();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
@@ -54,6 +75,22 @@ const Profile = () => {
     enabled: !!user,
   });
 
+  const canSeeOwnCampaigns = isAdmin || (profile?.is_organization && profile?.organization_verified);
+
+  const { data: myCampaigns = [], isLoading: campaignsLoading } = useQuery({
+    queryKey: ["my-campaigns", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaigns")
+        .select("id, title, status, current_amount, target_amount, images")
+        .eq("created_by", user!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!canSeeOwnCampaigns,
+  });
+
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || "");
@@ -75,7 +112,6 @@ const Profile = () => {
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
       toast({ variant: "destructive", title: "Моля, изберете изображение" });
       return;
@@ -84,26 +120,19 @@ const Profile = () => {
       toast({ variant: "destructive", title: "Максимален размер: 2MB" });
       return;
     }
-
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
       const filePath = `${user.id}/avatar.${ext}`;
-
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, file, { upsert: true });
-
       if (uploadError) throw uploadError;
-
       const { data: { publicUrl } } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
-
-      // Append cache-buster
       const newUrl = `${publicUrl}?t=${Date.now()}`;
       setAvatarUrl(newUrl);
-
       await supabase.from("profiles").update({ avatar_url: newUrl }).eq("id", user.id);
       queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
       toast({ title: "Снимката е качена успешно" });
@@ -124,13 +153,18 @@ const Profile = () => {
     if (error) {
       toast({ variant: "destructive", title: "Грешка", description: error.message });
     } else {
+      queryClient.invalidateQueries({ queryKey: ["profile", user.id] });
       toast({ title: "Профилът е обновен" });
     }
   };
 
   const handleChangePassword = async () => {
+    if (!oldPassword) {
+      toast({ variant: "destructive", title: "Въведете текущата парола" });
+      return;
+    }
     if (newPassword.length < 6) {
-      toast({ variant: "destructive", title: "Паролата трябва да е поне 6 символа" });
+      toast({ variant: "destructive", title: "Новата парола трябва да е поне 6 символа" });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -138,14 +172,25 @@ const Profile = () => {
       return;
     }
     setChangingPw(true);
+    // Verify old password by re-signing in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: oldPassword,
+    });
+    if (signInError) {
+      setChangingPw(false);
+      toast({ variant: "destructive", title: "Грешна текуща парола" });
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setChangingPw(false);
     if (error) {
       toast({ variant: "destructive", title: "Грешка", description: error.message });
     } else {
+      setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
-      toast({ title: "Паролата е променена" });
+      toast({ title: "Паролата е променена успешно" });
     }
   };
 
@@ -207,6 +252,10 @@ const Profile = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
+              <Label htmlFor="oldPw">Текуща парола</Label>
+              <Input id="oldPw" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
+            </div>
+            <div className="space-y-1">
               <Label htmlFor="newPw">Нова парола</Label>
               <Input id="newPw" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
             </div>
@@ -214,13 +263,71 @@ const Profile = () => {
               <Label htmlFor="confirmPw">Потвърди парола</Label>
               <Input id="confirmPw" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             </div>
-            <Button onClick={handleChangePassword} disabled={changingPw || !newPassword} variant="outline" className="w-full">
+            <Button onClick={handleChangePassword} disabled={changingPw || !oldPassword || !newPassword} variant="outline" className="w-full">
               {changingPw ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
               Промени парола
             </Button>
           </CardContent>
         </Card>
       </div>
+
+      {/* My Campaigns section */}
+      {canSeeOwnCampaigns && (
+        <>
+          <Separator className="my-8" />
+          <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
+            <Megaphone className="h-5 w-5" /> Моите кампании
+          </h2>
+          {campaignsLoading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : myCampaigns.length === 0 ? (
+            <p className="py-10 text-center text-muted-foreground">Все още нямате създадени кампании.</p>
+          ) : (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {myCampaigns.map((c: any) => {
+                const pct = c.target_amount > 0 ? Math.min((Number(c.current_amount) / Number(c.target_amount)) * 100, 100) : 0;
+                return (
+                  <Card key={c.id} className="overflow-hidden">
+                    <div className="aspect-video bg-secondary">
+                      {c.images?.[0] ? (
+                        <img src={c.images[0]} alt={c.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-muted-foreground">
+                          <Megaphone className="h-8 w-8" />
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="space-y-3 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-heading font-semibold line-clamp-2">{c.title}</h3>
+                        <Badge className={statusColors[c.status] || "bg-muted text-muted-foreground"}>
+                          {statusLabels[c.status] || c.status}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs text-muted-foreground">
+                          <span>{Number(c.current_amount)} €</span>
+                          <span>{Number(c.target_amount)} €</span>
+                        </div>
+                        <Progress value={pct} className="h-2" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button asChild variant="outline" size="sm" className="flex-1 gap-1">
+                          <Link to={`/campaign/${c.id}`}>
+                            <Eye className="h-3.5 w-3.5" /> Виж
+                          </Link>
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
 
       <Separator className="my-8" />
       <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
