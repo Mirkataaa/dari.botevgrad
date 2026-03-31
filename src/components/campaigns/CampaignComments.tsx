@@ -256,7 +256,7 @@ const CampaignComments = ({ campaignId }: Props) => {
                 ) : (
                   <>
                     <p className="text-sm leading-relaxed">{c.content}</p>
-                    <VoteButtons targetId={c.id} table="comment_votes" foreignKey="comment_id" />
+                    <VoteButtons targetId={c.id} table="comment_votes" foreignKey="comment_id" parentQueryKey={["comments", campaignId]} />
                   </>
                 )}
               </div>

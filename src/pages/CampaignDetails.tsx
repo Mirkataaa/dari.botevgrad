@@ -48,7 +48,7 @@ const CampaignDetails = () => {
     );
   }
 
-  const isCompleted = campaign.status === "completed";
+  const isClosed = campaign.status === "completed" || campaign.status === "closed";
   const imageUrl = campaign.images?.[0];
 
   return (
@@ -76,7 +76,7 @@ const CampaignDetails = () => {
             <Badge variant="outline" className="gap-1">
               <Calendar className="h-3 w-3" />{new Date(campaign.created_at).toLocaleDateString("bg-BG")}
             </Badge>
-            {isCompleted && <Badge className="bg-primary text-primary-foreground">Приключила</Badge>}
+            {isClosed && <Badge className="bg-primary text-primary-foreground">{campaign.status === "closed" ? "Затворена" : "Приключила"}</Badge>}
           </div>
 
           <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
@@ -94,7 +94,7 @@ const CampaignDetails = () => {
               <CampaignProgress collected={Number(campaign.current_amount)} target={Number(campaign.target_amount)} size="lg" />
 
               <div className="flex gap-3">
-                <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isCompleted} />
+                <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} />
                 <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={imageUrl} />
               </div>
 

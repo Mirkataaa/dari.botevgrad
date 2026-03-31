@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Share2, Copy, Check, Facebook, Twitter } from "lucide-react";
+import { Share2, Copy, Check, Facebook, Twitter, Instagram, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -15,9 +15,12 @@ interface Props {
 const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default" }: Props) => {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const url = `${window.location.origin}/campaign/${campaignId}`;
   const encodedUrl = encodeURIComponent(url);
   const encodedTitle = encodeURIComponent(campaignTitle);
+
+  const embedCode = `<iframe src="${url}" width="400" height="300" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(url);
@@ -26,19 +29,49 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const copyEmbed = async () => {
+    await navigator.clipboard.writeText(embedCode);
+    setEmbedCopied(true);
+    toast({ title: "Embed кодът е копиран!" });
+    setTimeout(() => setEmbedCopied(false), 2000);
+  };
+
   const handleShare = async () => {
-    // Try native Web Share API first
     if (navigator.share) {
       try {
         await navigator.share({ title: campaignTitle, url });
         return;
       } catch {
-        // User cancelled or not supported — fall through to dialog
+        // fall through to dialog
       }
     }
   };
 
   const btnClass = size === "sm" ? "h-9 w-9" : "h-11 w-11";
+
+  const socialLinks = [
+    {
+      name: "Facebook",
+      icon: Facebook,
+      url: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    },
+    {
+      name: "X (Twitter)",
+      icon: Twitter,
+      url: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+    },
+    {
+      name: "Instagram",
+      icon: Instagram,
+      url: `https://www.instagram.com/`, // Instagram doesn't support URL sharing - we copy link
+      action: copyLink,
+    },
+    {
+      name: "Threads",
+      icon: Link2,
+      url: `https://www.threads.net/intent/post?text=${encodedTitle}%20${encodedUrl}`,
+    },
+  ];
 
   return (
     <Dialog>
@@ -61,6 +94,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
 
         <p className="text-sm font-medium">{campaignTitle}</p>
 
+        {/* Copy link */}
         <div className="flex gap-2">
           <Input value={url} readOnly className="text-sm" />
           <Button variant="outline" size="icon" onClick={copyLink}>
@@ -68,21 +102,36 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
           </Button>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2"
-            onClick={() => window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, "_blank")}
-          >
-            <Facebook className="h-4 w-4" /> Facebook
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 gap-2"
-            onClick={() => window.open(`https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`, "_blank")}
-          >
-            <Twitter className="h-4 w-4" /> Twitter
-          </Button>
+        {/* Social buttons */}
+        <div className="grid grid-cols-2 gap-2">
+          {socialLinks.map((s) => (
+            <Button
+              key={s.name}
+              variant="outline"
+              className="gap-2 text-sm"
+              onClick={() => {
+                if (s.action) {
+                  s.action();
+                  toast({ title: "Линкът е копиран! Споделете го в Instagram." });
+                } else {
+                  window.open(s.url, "_blank");
+                }
+              }}
+            >
+              <s.icon className="h-4 w-4" /> {s.name}
+            </Button>
+          ))}
+        </div>
+
+        {/* Embed code */}
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Embed код (iframe)</p>
+          <div className="flex gap-2">
+            <Input value={embedCode} readOnly className="text-xs font-mono" />
+            <Button variant="outline" size="icon" onClick={copyEmbed}>
+              {embedCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

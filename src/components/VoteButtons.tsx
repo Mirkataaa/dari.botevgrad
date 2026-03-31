@@ -13,7 +13,15 @@ interface Props {
   foreignKey: "comment_id" | "update_id";
 }
 
-const VoteButtons = ({ targetId, table, foreignKey }: Props) => {
+interface Props {
+  targetId: string;
+  table: "comment_votes" | "update_votes";
+  foreignKey: "comment_id" | "update_id";
+  /** Parent query key to invalidate on vote change (for sorting) */
+  parentQueryKey?: string[];
+}
+
+const VoteButtons = ({ targetId, table, foreignKey, parentQueryKey }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -50,6 +58,7 @@ const VoteButtons = ({ targetId, table, foreignKey }: Props) => {
         await (supabase as any).from(table).insert({ [foreignKey]: targetId, user_id: user.id, vote_type: type });
       }
       queryClient.invalidateQueries({ queryKey: [table, targetId] });
+      if (parentQueryKey) queryClient.invalidateQueries({ queryKey: parentQueryKey });
     } catch {
       toast({ variant: "destructive", title: "Грешка при гласуване" });
     } finally {

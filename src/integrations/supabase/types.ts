@@ -60,6 +60,7 @@ export type Database = {
           documents: string[] | null
           id: string
           images: string[] | null
+          is_recommended: boolean
           short_description: string | null
           status: Database["public"]["Enums"]["campaign_status"]
           target_amount: number
@@ -77,6 +78,7 @@ export type Database = {
           documents?: string[] | null
           id?: string
           images?: string[] | null
+          is_recommended?: boolean
           short_description?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_amount: number
@@ -94,6 +96,7 @@ export type Database = {
           documents?: string[] | null
           id?: string
           images?: string[] | null
+          is_recommended?: boolean
           short_description?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_amount?: number
@@ -361,6 +364,7 @@ export type Database = {
         | "completed"
         | "rejected"
         | "stopped"
+        | "closed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -503,6 +507,7 @@ export const Constants = {
         "completed",
         "rejected",
         "stopped",
+        "closed",
       ],
     },
   },

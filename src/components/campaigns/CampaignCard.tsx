@@ -18,7 +18,7 @@ const categoryMap: Record<string, string> = {
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
-  const isCompleted = status === "completed";
+  const isClosed = status === "completed" || status === "closed";
   const imageUrl = images?.[0];
 
   return (
@@ -34,9 +34,9 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         <Badge className="absolute left-3 top-3 bg-card/90 text-foreground backdrop-blur-sm hover:bg-card">
           {categoryMap[category] || category}
         </Badge>
-        {isCompleted && (
+        {isClosed && (
           <Badge className="absolute right-3 top-3 bg-primary text-primary-foreground">
-            Приключила
+            {status === "closed" ? "Затворена" : "Приключила"}
           </Badge>
         )}
       </div>
@@ -55,9 +55,9 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         <CampaignProgress collected={Number(current_amount)} target={Number(target_amount)} size="sm" />
 
         <div className="flex items-center gap-2 pt-1">
-          <Button asChild className="flex-1" size="sm" disabled={isCompleted}>
+          <Button asChild className="flex-1" size="sm" disabled={isClosed}>
             <Link to={`/campaign/${id}`}>
-              {isCompleted ? "Приключила" : "Дари сега"}
+              {isClosed ? (status === "closed" ? "Затворена" : "Приключила") : "Дари сега"}
             </Link>
           </Button>
           <ShareWidget campaignId={id} campaignTitle={title} campaignImage={imageUrl} />
