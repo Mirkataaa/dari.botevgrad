@@ -15,7 +15,7 @@ const statusLabels: Record<string, string> = {
   completed: "Завършена",
   rejected: "Отхвърлена",
   stopped: "Спряна",
-  closed: "Затворена",
+  closed: "Приключена",
 };
 
 const statusColors: Record<string, string> = {
