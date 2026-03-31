@@ -4,14 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageSquare, Trash2, Loader2, Pencil, X, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import VoteButtons from "@/components/VoteButtons";
 
 interface Props {
   campaignId: string;
 }
+
+type SortOption = "newest" | "oldest" | "most_liked";
 
 const CampaignComments = ({ campaignId }: Props) => {
   const { user } = useAuth();
@@ -21,6 +25,7 @@ const CampaignComments = ({ campaignId }: Props) => {
   const [content, setContent] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [sortBy, setSortBy] = useState<SortOption>("newest");
 
   const { data: comments = [], isLoading, error: commentsError } = useQuery({
     queryKey: ["comments", campaignId],
@@ -41,13 +46,37 @@ const CampaignComments = ({ campaignId }: Props) => {
         .select("id, full_name, avatar_url")
         .in("id", userIds);
 
+      // Fetch vote counts
+      const commentIds = (commentsData ?? []).map(c => c.id);
+      const { data: votesData } = await supabase
+        .from("comment_votes")
+        .select("comment_id, vote_type")
+        .in("comment_id", commentIds);
+
+      const voteCounts = new Map<string, { likes: number; dislikes: number }>();
+      (votesData ?? []).forEach(v => {
+        const cur = voteCounts.get(v.comment_id) || { likes: 0, dislikes: 0 };
+        if (v.vote_type === "like") cur.likes++;
+        else cur.dislikes++;
+        voteCounts.set(v.comment_id, cur);
+      });
+
       const profilesById = new Map((profilesData ?? []).map((p) => [p.id, p]));
 
       return (commentsData ?? []).map((c) => ({
         ...c,
         profiles: profilesById.get(c.user_id) ?? null,
+        _likes: voteCounts.get(c.id)?.likes || 0,
+        _dislikes: voteCounts.get(c.id)?.dislikes || 0,
       }));
     },
+  });
+
+  // Sort comments
+  const sortedComments = [...comments].sort((a: any, b: any) => {
+    if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    if (sortBy === "most_liked") return (b._likes - b._dislikes) - (a._likes - a._dislikes);
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
   const addComment = useMutation({
@@ -62,7 +91,6 @@ const CampaignComments = ({ campaignId }: Props) => {
     onSuccess: () => {
       setContent("");
       queryClient.invalidateQueries({ queryKey: ["comments", campaignId] });
-      queryClient.refetchQueries({ queryKey: ["comments", campaignId] });
       toast({ title: "Коментарът е добавен" });
     },
     onError: (err: any) => {
@@ -118,10 +146,22 @@ const CampaignComments = ({ campaignId }: Props) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
-        <MessageSquare className="h-5 w-5" />
-        Коментари ({comments.length})
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
+          <MessageSquare className="h-5 w-5" />
+          Коментари ({comments.length})
+        </h2>
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">Най-нови</SelectItem>
+            <SelectItem value="oldest">Най-стари</SelectItem>
+            <SelectItem value="most_liked">Най-харесвани</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {user && (
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -158,9 +198,10 @@ const CampaignComments = ({ campaignId }: Props) => {
         <p className="py-6 text-center text-sm text-muted-foreground">Все още няма коментари. Бъдете първи!</p>
       ) : (
         <div className="space-y-4">
-          {comments.map((c: any) => (
+          {sortedComments.map((c: any) => (
             <div key={c.id} className="flex gap-3 rounded-lg border p-4">
               <Avatar className="h-8 w-8 shrink-0">
+                {c.profiles?.avatar_url && <AvatarImage src={c.profiles.avatar_url} />}
                 <AvatarFallback className="text-xs">
                   {(c.profiles?.full_name || "?")[0].toUpperCase()}
                 </AvatarFallback>
@@ -213,7 +254,10 @@ const CampaignComments = ({ campaignId }: Props) => {
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm leading-relaxed">{c.content}</p>
+                  <>
+                    <p className="text-sm leading-relaxed">{c.content}</p>
+                    <VoteButtons targetId={c.id} table="comment_votes" foreignKey="comment_id" />
+                  </>
                 )}
               </div>
             </div>
