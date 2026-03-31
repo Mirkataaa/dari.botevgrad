@@ -4,8 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Pause, Play, Search } from "lucide-react";
+import { Check, X, Pause, Play, Search, Lock, Star } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   pending: "Чакаща",
@@ -13,6 +15,7 @@ const statusLabels: Record<string, string> = {
   completed: "Завършена",
   rejected: "Отхвърлена",
   stopped: "Спряна",
+  closed: "Затворена",
 };
 
 const statusColors: Record<string, string> = {
@@ -21,6 +24,7 @@ const statusColors: Record<string, string> = {
   completed: "bg-blue-100 text-blue-800",
   rejected: "bg-red-100 text-red-800",
   stopped: "bg-gray-100 text-gray-800",
+  closed: "bg-purple-100 text-purple-800",
 };
 
 const categoryLabels: Record<string, string> = {
@@ -51,12 +55,22 @@ const AdminCampaigns = () => {
 
   useEffect(() => { fetchCampaigns(); }, []);
 
-  const updateStatus = async (id: string, status: "pending" | "active" | "completed" | "rejected" | "stopped") => {
-    const { error } = await supabase.from("campaigns").update({ status }).eq("id", id);
+  const updateStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from("campaigns").update({ status } as any).eq("id", id);
     if (error) {
       toast({ variant: "destructive", title: "Грешка", description: error.message });
     } else {
       toast({ title: "Статусът е обновен" });
+      fetchCampaigns();
+    }
+  };
+
+  const toggleRecommended = async (id: string, current: boolean) => {
+    const { error } = await supabase.from("campaigns").update({ is_recommended: !current } as any).eq("id", id);
+    if (error) {
+      toast({ variant: "destructive", title: "Грешка", description: error.message });
+    } else {
+      toast({ title: !current ? "Кампанията е препоръчана" : "Кампанията вече не е препоръчана" });
       fetchCampaigns();
     }
   };
@@ -85,20 +99,13 @@ const AdminCampaigns = () => {
     <div>
       <h1 className="mb-6 font-heading text-2xl font-bold">Управление на кампании</h1>
 
-      {/* Search */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Търсене..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9"
-        />
+        <Input placeholder="Търсене..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
-      {/* Status filters */}
       <div className="mb-2 flex flex-wrap gap-2">
-        {["all", "pending", "active", "completed", "rejected", "stopped"].map((f) => (
+        {["all", "pending", "active", "completed", "rejected", "stopped", "closed"].map((f) => (
           <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)}>
             {f === "all" ? "Всички" : statusLabels[f]}
             {f !== "all" && <span className="ml-1 text-xs">({campaigns.filter((c) => c.status === f).length})</span>}
@@ -106,7 +113,6 @@ const AdminCampaigns = () => {
         ))}
       </div>
 
-      {/* Category filters */}
       <div className="mb-4 flex flex-wrap gap-2">
         {["all", ...Object.keys(categoryLabels)].map((c) => (
           <Button key={c} variant={categoryFilter === c ? "secondary" : "ghost"} size="sm" onClick={() => setCategoryFilter(c)}>
@@ -128,13 +134,29 @@ const AdminCampaigns = () => {
                     <Badge className={statusColors[campaign.status]} variant="secondary">
                       {statusLabels[campaign.status]}
                     </Badge>
+                    {campaign.is_recommended && (
+                      <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
+                        <Star className="mr-1 h-3 w-3" /> Препоръчана
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {categoryLabels[campaign.category] || campaign.category} · {Number(campaign.current_amount).toLocaleString("bg-BG")} / {Number(campaign.target_amount).toLocaleString("bg-BG")} €
                   </p>
                 </div>
 
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  {/* Recommended toggle */}
+                  {["active", "completed"].includes(campaign.status) && (
+                    <div className="flex items-center gap-1.5">
+                      <Switch
+                        checked={!!campaign.is_recommended}
+                        onCheckedChange={() => toggleRecommended(campaign.id, !!campaign.is_recommended)}
+                      />
+                      <Label className="text-xs">Препоръчана</Label>
+                    </div>
+                  )}
+
                   {campaign.status === "pending" && (
                     <>
                       <Button size="sm" onClick={() => updateStatus(campaign.id, "active")}>
@@ -146,9 +168,14 @@ const AdminCampaigns = () => {
                     </>
                   )}
                   {campaign.status === "active" && (
-                    <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "stopped")}>
-                      <Pause className="mr-1 h-4 w-4" /> Спри
-                    </Button>
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "stopped")}>
+                        <Pause className="mr-1 h-4 w-4" /> Спри
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "closed")}>
+                        <Lock className="mr-1 h-4 w-4" /> Затвори
+                      </Button>
+                    </>
                   )}
                   {campaign.status === "stopped" && (
                     <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "active")}>
