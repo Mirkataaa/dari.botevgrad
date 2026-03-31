@@ -11,7 +11,7 @@ export const useCampaigns = (status?: "active" | "completed") => {
     queryFn: async () => {
       let query = supabase.from("campaigns").select("*").order("created_at", { ascending: false });
       if (status === "active") query = query.eq("status", "active");
-      if (status === "completed") query = query.eq("status", "completed");
+      if (status === "completed") query = query.in("status", ["completed", "closed"]);
       const { data, error } = await query;
       if (error) throw error;
       return data;
