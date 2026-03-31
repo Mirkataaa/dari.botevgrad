@@ -25,6 +25,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminComments from "./pages/admin/AdminComments";
 import AdminContacts from "./pages/admin/AdminContacts";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import Unsubscribe from "./pages/Unsubscribe";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();

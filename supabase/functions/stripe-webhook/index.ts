@@ -92,6 +92,50 @@ serve(async (req) => {
           sessionId: session.id,
         });
       }
+
+      // Send donation confirmation email if donor has an email
+      const customerEmail =
+        typeof session.customer_details?.email === "string"
+          ? session.customer_details.email
+          : null;
+
+      if (customerEmail) {
+        const donationDate = new Date().toLocaleDateString("bg-BG", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+
+        // Fetch campaign title
+        const { data: campData } = await supabase
+          .from("campaigns")
+          .select("title")
+          .eq("id", updatedDonation.campaign_id)
+          .single();
+
+        const { error: emailError } = await supabase.functions.invoke(
+          "send-transactional-email",
+          {
+            body: {
+              templateName: "donation-confirmation",
+              recipientEmail: customerEmail,
+              idempotencyKey: `donation-confirm-${updatedDonation.id}`,
+              templateData: {
+                amount: String(updatedDonation.amount),
+                campaignTitle: campData?.title || "Кампания",
+                donationId: updatedDonation.id,
+                date: donationDate,
+              },
+            },
+          }
+        );
+
+        if (emailError) {
+          console.error("[stripe-webhook] Email send error:", emailError.message);
+        } else {
+          console.log("[stripe-webhook] Donation confirmation email queued for", customerEmail);
+        }
+      }
     }
   }
 
