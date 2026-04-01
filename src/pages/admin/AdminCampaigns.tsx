@@ -7,14 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Pause, Play, Search, Lock, Star } from "lucide-react";
+import { Check, X, Search, Lock, Star, Play } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   pending: "Чакаща",
   active: "Активна",
   completed: "Завършена",
   rejected: "Отхвърлена",
-  stopped: "Спряна",
   closed: "Приключена",
 };
 
@@ -23,7 +22,6 @@ const statusColors: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
   completed: "bg-blue-100 text-blue-800",
   rejected: "bg-red-100 text-red-800",
-  stopped: "bg-gray-100 text-gray-800",
   closed: "bg-purple-100 text-purple-800",
 };
 
@@ -105,7 +103,7 @@ const AdminCampaigns = () => {
       </div>
 
       <div className="mb-2 flex flex-wrap gap-2">
-        {["all", "pending", "active", "completed", "rejected", "stopped", "closed"].map((f) => (
+        {["all", "pending", "active", "completed", "rejected", "closed"].map((f) => (
           <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)}>
             {f === "all" ? "Всички" : statusLabels[f]}
             {f !== "all" && <span className="ml-1 text-xs">({campaigns.filter((c) => c.status === f).length})</span>}
@@ -131,8 +129,8 @@ const AdminCampaigns = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold truncate">{campaign.title}</h3>
-                    <Badge className={statusColors[campaign.status]} variant="secondary">
-                      {statusLabels[campaign.status]}
+                    <Badge className={statusColors[campaign.status] || "bg-gray-100 text-gray-800"} variant="secondary">
+                      {statusLabels[campaign.status] || campaign.status}
                     </Badge>
                     {campaign.is_recommended && (
                       <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
@@ -146,7 +144,6 @@ const AdminCampaigns = () => {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
-                  {/* Recommended toggle */}
                   {["active", "completed", "closed"].includes(campaign.status) && (
                     <div className="flex items-center gap-1.5">
                       <Switch
@@ -168,18 +165,8 @@ const AdminCampaigns = () => {
                     </>
                   )}
                   {campaign.status === "active" && (
-                    <>
-                      <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "stopped")}>
-                        <Pause className="mr-1 h-4 w-4" /> Спри
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "closed")}>
-                        <Lock className="mr-1 h-4 w-4" /> Приключи
-                      </Button>
-                    </>
-                  )}
-                  {campaign.status === "stopped" && (
-                    <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "active")}>
-                      <Play className="mr-1 h-4 w-4" /> Активирай
+                    <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "closed")}>
+                      <Lock className="mr-1 h-4 w-4" /> Приключи
                     </Button>
                   )}
                   {(campaign.status === "closed" || campaign.status === "completed") && (
