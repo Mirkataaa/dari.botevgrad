@@ -49,7 +49,7 @@ export const useDonations = (campaignId?: string) => {
       if (campaignId) query = query.eq("campaign_id", campaignId);
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as PublicDonation[];
+      return (data || []) as unknown as PublicDonation[];
     },
   });
 };
