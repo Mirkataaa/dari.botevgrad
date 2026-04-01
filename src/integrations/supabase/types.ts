@@ -449,6 +449,44 @@ export type Database = {
       }
     }
     Views: {
+      public_donations: {
+        Row: {
+          amount: number | null
+          campaign_id: string | null
+          created_at: string | null
+          donor_name: string | null
+          id: string | null
+          is_anonymous: boolean | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          campaign_id?: string | null
+          created_at?: string | null
+          donor_name?: never
+          id?: string | null
+          is_anonymous?: boolean | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          campaign_id?: string | null
+          created_at?: string | null
+          donor_name?: never
+          id?: string | null
+          is_anonymous?: boolean | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
