@@ -15,7 +15,7 @@ const AdminDonations = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "completed" | "pending">("all");
 
-  useRealtimeSync("donations", [["admin-donations"]]);
+  useRealtimeSync("campaigns", [["admin-donations"]]);
 
   const fetchDonations = async () => {
     let query = supabase
