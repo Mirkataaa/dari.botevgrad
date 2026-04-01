@@ -50,7 +50,7 @@ export const useCampaignStats = () => {
     queryFn: async () => {
       const [campaignsRes, donationsRes] = await Promise.all([
         supabase.from("campaigns").select("id", { count: "exact" }).in("status", ["active", "completed"]),
-        supabase.from("donations").select("amount, donor_id").eq("status", "completed"),
+        supabase.from("public_donations" as any).select("amount").eq("status", "completed"),
       ]);
       const totalRaised = (donationsRes.data || []).reduce((sum, d) => sum + Number(d.amount), 0);
       const uniqueDonors = new Set((donationsRes.data || []).map(d => d.donor_id).filter(Boolean)).size;
