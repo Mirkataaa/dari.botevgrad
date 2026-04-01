@@ -35,7 +35,7 @@ export const useDonations = (campaignId?: string) => {
   return useQuery({
     queryKey: ["donations", campaignId],
     queryFn: async () => {
-      let query = supabase.from("donations").select("id, campaign_id, donor_name, donor_id, amount, is_anonymous, status, created_at").eq("status", "completed").order("created_at", { ascending: false });
+      let query = supabase.from("public_donations" as any).select("id, campaign_id, donor_name, amount, is_anonymous, status, created_at").eq("status", "completed").order("created_at", { ascending: false });
       if (campaignId) query = query.eq("campaign_id", campaignId);
       const { data, error } = await query;
       if (error) throw error;
