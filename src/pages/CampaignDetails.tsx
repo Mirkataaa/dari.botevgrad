@@ -26,8 +26,7 @@ const CampaignDetails = () => {
   const { data: campaign, isLoading } = useCampaign(id || "");
   const { data: donations = [] } = useDonations(id);
 
-  useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"]]);
-  useRealtimeSync("donations", [["donations", id || ""]]);
+  useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"], ["donations", id || ""]]);
 
   if (isLoading) {
     return (
