@@ -42,7 +42,7 @@ const CampaignComments = ({ campaignId }: Props) => {
       if (userIds.length === 0) return commentsData ?? [];
 
       const { data: profilesData } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("id, full_name, avatar_url")
         .in("id", userIds);
 
