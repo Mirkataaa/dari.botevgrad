@@ -5,6 +5,16 @@ import type { Tables } from "@/integrations/supabase/types";
 export type Campaign = Tables<"campaigns">;
 export type Donation = Tables<"donations">;
 
+export interface PublicDonation {
+  id: string;
+  campaign_id: string;
+  amount: number;
+  donor_name: string | null;
+  is_anonymous: boolean | null;
+  status: string;
+  created_at: string;
+}
+
 export const useCampaigns = (status?: "active" | "completed") => {
   return useQuery({
     queryKey: ["campaigns", status],
@@ -32,14 +42,14 @@ export const useCampaign = (id: string) => {
 };
 
 export const useDonations = (campaignId?: string) => {
-  return useQuery({
+  return useQuery<PublicDonation[]>({
     queryKey: ["donations", campaignId],
     queryFn: async () => {
       let query = supabase.from("public_donations" as any).select("id, campaign_id, donor_name, amount, is_anonymous, status, created_at").eq("status", "completed").order("created_at", { ascending: false });
       if (campaignId) query = query.eq("campaign_id", campaignId);
       const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return (data || []) as PublicDonation[];
     },
   });
 };
@@ -52,11 +62,11 @@ export const useCampaignStats = () => {
         supabase.from("campaigns").select("id", { count: "exact" }).in("status", ["active", "completed"]),
         supabase.from("public_donations" as any).select("amount").eq("status", "completed"),
       ]);
-      const totalRaised = (donationsRes.data || []).reduce((sum, d) => sum + Number(d.amount), 0);
-      const uniqueDonors = new Set((donationsRes.data || []).map(d => d.donor_id).filter(Boolean)).size;
+      const rows = (donationsRes.data || []) as { amount: number }[];
+      const totalRaised = rows.reduce((sum, d) => sum + Number(d.amount), 0);
       return {
         campaignCount: campaignsRes.count || 0,
-        donorCount: uniqueDonors,
+        donorCount: 0,
         totalRaised,
       };
     },
