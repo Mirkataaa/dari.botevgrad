@@ -62,7 +62,7 @@ export const useCampaignStats = () => {
         supabase.from("campaigns").select("id", { count: "exact" }).in("status", ["active", "completed"]),
         supabase.from("public_donations" as any).select("amount").eq("status", "completed"),
       ]);
-      const rows = (donationsRes.data || []) as { amount: number }[];
+      const rows = (donationsRes.data || []) as unknown as { amount: number }[];
       const totalRaised = rows.reduce((sum, d) => sum + Number(d.amount), 0);
       return {
         campaignCount: campaignsRes.count || 0,
