@@ -37,6 +37,7 @@ const Profile = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin } = useIsAdmin();
+  const { data: notifications } = useNotifications();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
