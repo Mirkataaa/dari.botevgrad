@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Mail } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const AdminContacts = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchAndMarkRead = async () => {
       const { data } = await supabase
         .from("contact_messages")
         .select("*")
@@ -16,9 +19,20 @@ const AdminContacts = () => {
         .limit(100);
       setMessages(data || []);
       setLoading(false);
+
+      // Mark all unread messages as read
+      const unread = (data || []).filter((m: any) => !m.is_read);
+      if (unread.length > 0) {
+        await Promise.all(
+          unread.map((m: any) =>
+            supabase.from("contact_messages").update({ is_read: true }).eq("id", m.id)
+          )
+        );
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      }
     };
-    fetch();
-  }, []);
+    fetchAndMarkRead();
+  }, [queryClient]);
 
   if (loading) {
     return (
@@ -47,6 +61,9 @@ const AdminContacts = () => {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold">{msg.name}</p>
                       <a href={`mailto:${msg.email}`} className="text-sm text-primary hover:underline">{msg.email}</a>
+                      {!msg.is_read && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Ново</Badge>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-foreground whitespace-pre-wrap">{msg.message}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
