@@ -31,12 +31,12 @@ const AdminDraftReview = () => {
     queryKey: ["draft", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("campaign_drafts" as any)
+        .from("campaign_drafts")
         .select("*")
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data;
     },
     enabled: !!id,
   });
