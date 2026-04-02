@@ -75,6 +75,35 @@ const AdminCampaigns = () => {
     }
   };
 
+  const deleteCampaign = async (campaign: any) => {
+    // Delete storage files first
+    const buckets = [
+      { bucket: "campaign-images", files: campaign.images },
+      { bucket: "campaign-documents", files: campaign.documents },
+    ];
+    for (const { bucket, files } of buckets) {
+      if (files && files.length > 0) {
+        const paths = files.map((url: string) => {
+          try {
+            const parts = new URL(url).pathname.split("/");
+            return parts.slice(parts.indexOf(bucket) + 1).join("/");
+          } catch { return null; }
+        }).filter(Boolean);
+        if (paths.length > 0) {
+          await supabase.storage.from(bucket).remove(paths);
+        }
+      }
+    }
+    // Delete campaign record
+    const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
+    if (error) {
+      toast({ variant: "destructive", title: "Грешка", description: error.message });
+    } else {
+      toast({ title: "Кампанията е изтрита" });
+      fetchCampaigns();
+    }
+  };
+
   const toggleRecommended = async (id: string, current: boolean) => {
     const { error } = await supabase.from("campaigns").update({ is_recommended: !current } as any).eq("id", id);
     if (error) {
