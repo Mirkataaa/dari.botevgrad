@@ -13,23 +13,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Heart, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Heart, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
   campaignId: string;
   campaignTitle: string;
   disabled?: boolean;
+  isRecurring?: boolean;
 }
 
 const presetAmounts = [5, 10, 20, 50, 100];
 
-const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
+const DonateButton = ({ campaignId, campaignTitle, disabled, isRecurring }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [interval, setInterval] = useState("month");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,19 +49,26 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
       return;
     }
 
+    if (isRecurring && !user) {
+      toast({ variant: "destructive", title: "Трябва да влезете в профила си за абонамент" });
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("create-checkout", {
-        body: { campaignId, amount: numAmount, isAnonymous },
-      });
+      const functionName = isRecurring ? "create-subscription" : "create-checkout";
+      const body = isRecurring
+        ? { campaignId, amount: numAmount, interval }
+        : { campaignId, amount: numAmount, isAnonymous };
+
+      const { data, error: fnError } = await supabase.functions.invoke(functionName, { body });
 
       if (fnError) throw new Error(fnError.message || "Грешка при създаване на плащане");
       if (data?.error) throw new Error(data.error);
       if (!data?.url) throw new Error("Не беше получен линк за плащане");
 
-      // Navigate to Stripe checkout — handle cross-origin iframe gracefully
       try {
         if (window.top && window.top !== window.self) {
           window.top.location.href = data.url;
@@ -60,7 +76,6 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
           window.location.href = data.url;
         }
       } catch {
-        // Cross-origin iframe blocks top navigation — open in new tab
         window.open(data.url, "_blank", "noopener,noreferrer");
       }
     } catch (err: any) {
@@ -83,16 +98,24 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
     >
       <DialogTrigger asChild>
         <Button className="flex-1" size="lg" disabled={disabled}>
-          <Heart className="mr-2 h-4 w-4" />
-          {disabled ? "Приключила" : "Дари сега"}
+          {isRecurring ? (
+            <RefreshCw className="mr-2 h-4 w-4" />
+          ) : (
+            <Heart className="mr-2 h-4 w-4" />
+          )}
+          {disabled ? "Приключила" : isRecurring ? "Подкрепи месечно" : "Дари сега"}
         </Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Дари за "{campaignTitle}"</DialogTitle>
+          <DialogTitle>
+            {isRecurring ? `Месечна подкрепа за "${campaignTitle}"` : `Дари за "${campaignTitle}"`}
+          </DialogTitle>
           <DialogDescription>
-            Изберете сума за дарение. След това ще бъдете пренасочени към Stripe.
+            {isRecurring
+              ? "Изберете сума за месечна подкрепа. Ще бъдете пренасочени към Stripe за абонамент."
+              : "Изберете сума за дарение. След това ще бъдете пренасочени към Stripe."}
           </DialogDescription>
         </DialogHeader>
 
@@ -124,28 +147,60 @@ const DonateButton = ({ campaignId, campaignTitle, disabled }: Props) => {
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="anonymous"
-              checked={isAnonymous}
-              onCheckedChange={(c) => setIsAnonymous(c === true)}
-            />
-            <Label htmlFor="anonymous" className="text-sm font-normal">
-              Дари анонимно
-            </Label>
-          </div>
+          {isRecurring && (
+            <div className="space-y-2">
+              <Label>Период на плащане</Label>
+              <Select value={interval} onValueChange={setInterval}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">Месечно</SelectItem>
+                  <SelectItem value="year">Годишно</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
-          {!user && <p className="text-xs text-muted-foreground">Може да дарите и без регистрация.</p>}
+          {!isRecurring && (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="anonymous"
+                checked={isAnonymous}
+                onCheckedChange={(c) => setIsAnonymous(c === true)}
+              />
+              <Label htmlFor="anonymous" className="text-sm font-normal">
+                Дари анонимно
+              </Label>
+            </div>
+          )}
+
+          {isRecurring && !user && (
+            <p className="text-sm text-destructive">Трябва да влезете в профила си за абонамент.</p>
+          )}
+
+          {!isRecurring && !user && (
+            <p className="text-xs text-muted-foreground">Може да дарите и без регистрация.</p>
+          )}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button onClick={handleDonate} className="w-full" size="lg" disabled={loading || !amount}>
+          <Button
+            onClick={handleDonate}
+            className="w-full"
+            size="lg"
+            disabled={loading || !amount || (isRecurring && !user)}
+          >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : isRecurring ? (
+              <RefreshCw className="mr-2 h-4 w-4" />
             ) : (
               <Heart className="mr-2 h-4 w-4" />
             )}
-            Дари {amount ? `${amount} €` : ""}
+            {isRecurring
+              ? `Абонирай се ${amount ? `за ${amount} €/${interval === "month" ? "мес." : "год."}` : ""}`
+              : `Дари ${amount ? `${amount} €` : ""}`}
           </Button>
         </div>
       </DialogContent>
