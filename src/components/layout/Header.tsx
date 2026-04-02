@@ -128,6 +128,7 @@ const Header = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </>
               ) : (
                 <div className="ml-2 flex items-center gap-2">
                   <Button variant="ghost" size="sm" asChild>
