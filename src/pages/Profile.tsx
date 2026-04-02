@@ -277,6 +277,14 @@ const Profile = () => {
       {canSeeOwnCampaigns && (
         <>
           <Separator className="my-8" />
+          {(notifications?.rejectedItems || 0) > 0 && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <p className="text-sm font-medium text-destructive">
+                Имате {notifications!.rejectedItems} отхвърлен{notifications!.rejectedItems === 1 ? "а кампания/редакция" : "и кампании/редакции"}, изискващи вашето внимание.
+              </p>
+            </div>
+          )}
           <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
             <Megaphone className="h-5 w-5" /> Моите кампании
           </h2>
