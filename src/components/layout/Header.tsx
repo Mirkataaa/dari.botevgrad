@@ -87,6 +87,8 @@ const Header = () => {
           {!loading && (
             <>
               {user ? (
+                <>
+                <NotificationBell />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="ml-2 gap-2">
