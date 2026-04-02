@@ -16,6 +16,9 @@ const NotificationBell = () => {
   const handleClick = () => {
     if (isAdmin) {
       navigate("/admin");
+    } else if (data?.rejectedCampaignIds?.length === 1) {
+      // Single rejected campaign → go directly to it
+      navigate(`/campaign/${data.rejectedCampaignIds[0]}`);
     } else {
       navigate("/profile");
     }

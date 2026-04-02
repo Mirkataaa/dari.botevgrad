@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications, markAllRejectionsAsSeen } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -100,6 +100,15 @@ const Profile = () => {
       setAvatarUrl(profile.avatar_url || "");
     }
   }, [profile]);
+
+  // Mark rejection notifications as seen when creator visits profile
+  useEffect(() => {
+    if (notifications?.rejectedCampaignIds && notifications.rejectedCampaignIds.length > 0) {
+      markAllRejectionsAsSeen(notifications.rejectedCampaignIds).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      });
+    }
+  }, [notifications?.rejectedCampaignIds, queryClient]);
 
   if (authLoading) {
     return (

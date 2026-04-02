@@ -90,6 +90,7 @@ export type Database = {
           id: string
           reason: string
           rejected_by: string
+          seen_at: string | null
         }
         Insert: {
           campaign_id: string
@@ -98,6 +99,7 @@ export type Database = {
           id?: string
           reason: string
           rejected_by: string
+          seen_at?: string | null
         }
         Update: {
           campaign_id?: string
@@ -106,6 +108,7 @@ export type Database = {
           id?: string
           reason?: string
           rejected_by?: string
+          seen_at?: string | null
         }
         Relationships: [
           {
@@ -325,6 +328,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          is_read: boolean
           message: string
           name: string
         }
@@ -332,6 +336,7 @@ export type Database = {
           created_at?: string
           email: string
           id?: string
+          is_read?: boolean
           message: string
           name: string
         }
@@ -339,6 +344,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          is_read?: boolean
           message?: string
           name?: string
         }
