@@ -8,6 +8,7 @@ const AdminDashboard = () => {
     totalCampaigns: 0,
     activeCampaigns: 0,
     pendingCampaigns: 0,
+    pendingDrafts: 0,
     totalDonations: 0,
     totalAmount: 0,
     totalUsers: 0,
