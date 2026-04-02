@@ -22,8 +22,23 @@ const categoryMap: Record<string, string> = {
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
   const isClosed = status === "completed" || status === "closed";
+  const isPending = status === "pending";
   const mainIndex = (campaign as any).main_image_index || 0;
   const imageUrl = images?.[mainIndex] || images?.[0];
+  const { isAdmin } = useIsAdmin();
+
+  const { data: hasPendingDraft } = useQuery({
+    queryKey: ["campaign-draft-status", id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("campaign_drafts")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", id)
+        .eq("status", "pending_review");
+      return (count || 0) > 0;
+    },
+    enabled: isAdmin,
+  });
 
   return (
     <Card className="group overflow-hidden border-border/60 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
