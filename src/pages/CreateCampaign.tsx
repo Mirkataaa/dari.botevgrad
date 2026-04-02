@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus, X, Loader2, FileUp, Video } from "lucide-react";
+import { ImagePlus, X, Loader2, FileUp, Video, Star } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -52,6 +52,7 @@ const CreateCampaign = () => {
   const [videoUrls, setVideoUrls] = useState<string[]>([""]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [mainImageIndex, setMainImageIndex] = useState(0);
 
   // --- Image handling ---
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -169,6 +170,7 @@ const CreateCampaign = () => {
         videos: cleanVideoUrls,
         created_by: user!.id,
         status: "pending",
+        main_image_index: mainImageIndex,
       } as any);
 
       if (error) throw error;
@@ -245,13 +247,16 @@ const CreateCampaign = () => {
 
             {/* Images */}
             <div className="space-y-2">
-              <Label>Снимки (до 5)</Label>
+              <Label>Снимки (до 5) — кликнете ★ за главна снимка</Label>
               <div className="flex flex-wrap gap-3">
                 {imagePreviews.map((src, i) => (
                   <div key={i} className="relative h-24 w-24 overflow-hidden rounded-lg border">
                     <img src={src} alt="" className="h-full w-full object-cover" />
                     <button type="button" onClick={() => removeImage(i)} className="absolute right-1 top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground">
                       <X className="h-3 w-3" />
+                    </button>
+                    <button type="button" onClick={() => setMainImageIndex(i)} className={`absolute left-1 top-1 rounded-full p-0.5 ${mainImageIndex === i ? 'bg-yellow-400 text-yellow-900' : 'bg-black/40 text-white'}`}>
+                      <Star className="h-3 w-3" />
                     </button>
                   </div>
                 ))}

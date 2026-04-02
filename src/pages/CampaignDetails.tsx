@@ -1,5 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, Calendar, Tag, Pencil } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +27,8 @@ const categoryMap: Record<string, string> = {
 
 const CampaignDetails = () => {
   const { id } = useParams();
+  const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { data: campaign, isLoading } = useCampaign(id || "");
   const { data: donations = [] } = useDonations(id);
 
@@ -50,6 +54,7 @@ const CampaignDetails = () => {
   }
 
   const isClosed = campaign.status === "completed" || campaign.status === "closed";
+  const canEdit = user && (isAdmin || user.id === campaign.created_by);
   const images = campaign.images || [];
 
   return (
@@ -73,6 +78,13 @@ const CampaignDetails = () => {
           </div>
 
           <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
+          {canEdit && (
+            <Button asChild variant="outline" size="sm" className="gap-1 mt-2 w-fit">
+              <Link to={`/campaign/${campaign.id}/edit`}>
+                <Pencil className="h-4 w-4" /> Редактирай
+              </Link>
+            </Button>
+          )}
           <p className="text-lg leading-relaxed text-muted-foreground">{campaign.description}</p>
 
           {campaign.documents && campaign.documents.length > 0 && (

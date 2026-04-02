@@ -319,6 +319,11 @@ const Profile = () => {
                             <Eye className="h-3.5 w-3.5" /> Виж
                           </Link>
                         </Button>
+                        <Button asChild variant="outline" size="sm" className="flex-1 gap-1">
+                          <Link to={`/campaign/${c.id}/edit`}>
+                            <Pencil className="h-3.5 w-3.5" /> Редактирай
+                          </Link>
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>

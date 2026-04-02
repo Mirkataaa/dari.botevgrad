@@ -25,6 +25,8 @@ import AdminDonations from "./pages/admin/AdminDonations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminComments from "./pages/admin/AdminComments";
 import AdminContacts from "./pages/admin/AdminContacts";
+import AdminDraftReview from "./pages/admin/AdminDraftReview";
+import EditCampaign from "./pages/EditCampaign";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Unsubscribe from "./pages/Unsubscribe";
 import NotFound from "./pages/NotFound";
@@ -46,6 +48,7 @@ const App = () => (
             <Route element={<Layout><About /></Layout>} path="/about" />
             <Route element={<Layout><Profile /></Layout>} path="/profile" />
             <Route element={<OrgOrAdminRoute><Layout><CreateCampaign /></Layout></OrgOrAdminRoute>} path="/campaigns/create" />
+            <Route element={<Layout><EditCampaign /></Layout>} path="/campaign/:id/edit" />
             <Route element={<Layout><Login /></Layout>} path="/login" />
             <Route element={<Layout><Register /></Layout>} path="/register" />
             <Route element={<Layout><ResetPassword /></Layout>} path="/reset-password" />
@@ -56,6 +59,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="campaigns" element={<AdminCampaigns />} />
               <Route path="campaigns/:id" element={<AdminCampaignPreview />} />
+              <Route path="drafts/:id" element={<AdminDraftReview />} />
               <Route path="donations" element={<AdminDonations />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="comments" element={<AdminComments />} />
