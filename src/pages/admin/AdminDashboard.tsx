@@ -17,10 +17,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [campaignsRes, donationsRes, profilesRes] = await Promise.all([
+      const [campaignsRes, donationsRes, profilesRes, draftsRes] = await Promise.all([
         supabase.from("campaigns").select("id, status"),
         supabase.from("donations").select("amount, status"),
         supabase.from("profiles").select("id"),
+        supabase.from("campaign_drafts").select("id", { count: "exact", head: true }).eq("status", "pending_review"),
       ]);
 
       const campaigns = campaignsRes.data || [];
@@ -31,6 +32,7 @@ const AdminDashboard = () => {
         totalCampaigns: campaigns.length,
         activeCampaigns: campaigns.filter((c: any) => c.status === "active").length,
         pendingCampaigns: campaigns.filter((c: any) => c.status === "pending").length,
+        pendingDrafts: draftsRes.count || 0,
         totalDonations: donations.length,
         totalAmount: donations.reduce((sum: number, d: any) => sum + Number(d.amount), 0),
         totalUsers: profiles.length,
