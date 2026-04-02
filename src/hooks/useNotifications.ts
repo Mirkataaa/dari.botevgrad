@@ -81,18 +81,23 @@ export const useNotifications = () => {
         };
       }
 
-      // For creators: only unseen rejections
-      const { data: rejections } = await supabase
-        .from("campaign_rejections")
-        .select("campaign_id, campaigns!inner(created_by)")
-        .is("seen_at", null);
+      // For creators: only unseen rejections for own campaigns
+      const [rejectedCampaignsRes, rejectedDraftsRes] = await Promise.all([
+        supabase
+          .from("campaign_rejections")
+          .select("campaign_id")
+          .is("seen_at", null),
+        supabase
+          .from("campaigns")
+          .select("id")
+          .eq("created_by", user.id),
+      ]);
 
-      // Filter to own campaigns (RLS should handle this, but be safe)
-      const ownRejections = (rejections || []).filter(
-        (r: any) => r.campaigns?.created_by === user.id
+      const ownCampaignIds = new Set((rejectedDraftsRes.data || []).map((c: any) => c.id));
+      const unseenRejections = (rejectedCampaignsRes.data || []).filter(
+        (r: any) => ownCampaignIds.has(r.campaign_id)
       );
-
-      const uniqueCampaignIds = [...new Set(ownRejections.map((r: any) => r.campaign_id))];
+      const uniqueCampaignIds = [...new Set(unseenRejections.map((r: any) => r.campaign_id))];
 
       return {
         pendingCampaigns: 0,
