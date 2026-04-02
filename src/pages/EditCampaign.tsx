@@ -235,7 +235,7 @@ const EditCampaign = () => {
           documents: allDocUrls,
           videos: cleanVideoUrls,
           main_image_index: mainImageIndex,
-        } as any).eq("id", campaign.id);
+        }).eq("id", campaign.id);
         if (error) throw error;
         toast({ title: "Кампанията е обновена" });
         navigate(`/campaign/${campaign.id}`);
