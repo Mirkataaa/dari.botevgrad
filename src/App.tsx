@@ -20,6 +20,7 @@ import OrgOrAdminRoute from "@/components/admin/OrgOrAdminRoute";
 import CreateCampaign from "./pages/CreateCampaign";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
+import AdminCampaignPreview from "./pages/admin/AdminCampaignPreview";
 import AdminDonations from "./pages/admin/AdminDonations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminComments from "./pages/admin/AdminComments";
