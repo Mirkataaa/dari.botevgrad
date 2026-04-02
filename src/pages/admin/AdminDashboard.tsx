@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Megaphone, HandCoins, Users, TrendingUp } from "lucide-react";
+import { Megaphone, HandCoins, Users, TrendingUp, AlertCircle } from "lucide-react";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
