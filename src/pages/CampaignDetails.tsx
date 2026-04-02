@@ -109,10 +109,18 @@ const CampaignDetails = () => {
         <div className="space-y-6">
           <Card className="sticky top-20">
             <CardContent className="space-y-6 p-6">
-              <CampaignProgress collected={Number(campaign.current_amount)} target={Number(campaign.target_amount)} size="lg" />
+              {!isRecurring && (
+                <CampaignProgress collected={Number(campaign.current_amount)} target={Number(campaign.target_amount)} size="lg" />
+              )}
+              {isRecurring && (
+                <div className="text-center space-y-1">
+                  <p className="text-2xl font-bold text-primary">{Number(campaign.current_amount)} €</p>
+                  <p className="text-sm text-muted-foreground">Събрани до момента</p>
+                </div>
+              )}
 
               <div className="flex gap-3">
-                <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} />
+                <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} isRecurring={isRecurring} />
                 <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
               </div>
 
