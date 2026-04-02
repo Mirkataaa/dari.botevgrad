@@ -226,6 +226,20 @@ const CreateCampaign = () => {
               {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
             </div>
 
+            {/* Campaign type toggle */}
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <RefreshCw className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <Label htmlFor="recurring-toggle" className="text-sm font-medium">Периодична кампания</Label>
+                <p className="text-xs text-muted-foreground">Позволява абонаментни дарения (месечни/годишни)</p>
+              </div>
+              <Switch
+                id="recurring-toggle"
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+              />
+            </div>
+
             {/* Short description */}
             <div className="space-y-2">
               <Label htmlFor="short_desc">Кратко описание *</Label>
@@ -242,12 +256,14 @@ const CreateCampaign = () => {
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
 
-            {/* Target amount */}
-            <div className="space-y-2">
-              <Label htmlFor="target">Целева сума (€) *</Label>
-              <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} placeholder="10000" />
-              {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
-            </div>
+            {/* Target amount - only for one-time campaigns */}
+            {!isRecurring && (
+              <div className="space-y-2">
+                <Label htmlFor="target">Целева сума (€) *</Label>
+                <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} placeholder="10000" />
+                {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
+              </div>
+            )
 
             {/* Deadline */}
             <div className="space-y-2">
