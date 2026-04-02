@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil } from "lucide-react";
+import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate, Link } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -36,6 +37,7 @@ const Profile = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin } = useIsAdmin();
+  const { data: notifications } = useNotifications();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -275,6 +277,14 @@ const Profile = () => {
       {canSeeOwnCampaigns && (
         <>
           <Separator className="my-8" />
+          {(notifications?.rejectedItems || 0) > 0 && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              <p className="text-sm font-medium text-destructive">
+                Имате {notifications!.rejectedItems} отхвърлен{notifications!.rejectedItems === 1 ? "а кампания/редакция" : "и кампании/редакции"}, изискващи вашето внимание.
+              </p>
+            </div>
+          )}
           <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
             <Megaphone className="h-5 w-5" /> Моите кампании
           </h2>

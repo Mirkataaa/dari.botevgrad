@@ -45,6 +45,20 @@ const AdminUsers = () => {
     }
   };
 
+  const markAsOrganization = async (userId: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_organization: true })
+      .eq("id", userId);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Грешка", description: error.message });
+    } else {
+      toast({ title: "Потребителят е маркиран като организация" });
+      fetchData();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -86,6 +100,11 @@ const AdminUsers = () => {
                 </div>
 
                 <div className="flex gap-2">
+                  {!profile.is_organization && (
+                    <Button size="sm" variant="outline" onClick={() => markAsOrganization(profile.id)}>
+                      <Building2 className="mr-1 h-3 w-3" /> Направи организация
+                    </Button>
+                  )}
                   {profile.is_organization && !profile.organization_verified && (
                     <Button size="sm" onClick={() => verifyOrganization(profile.id)}>
                       Верифицирай

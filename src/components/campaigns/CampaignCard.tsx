@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import CampaignProgress from "./CampaignProgress";
 import ShareWidget from "./ShareWidget";
 import type { Campaign } from "@/hooks/useCampaigns";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const categoryMap: Record<string, string> = {
   social: "Социални",
@@ -19,8 +22,23 @@ const categoryMap: Record<string, string> = {
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
   const isClosed = status === "completed" || status === "closed";
+  const isPending = status === "pending";
   const mainIndex = (campaign as any).main_image_index || 0;
   const imageUrl = images?.[mainIndex] || images?.[0];
+  const { isAdmin } = useIsAdmin();
+
+  const { data: hasPendingDraft } = useQuery({
+    queryKey: ["campaign-draft-status", id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("campaign_drafts")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", id)
+        .eq("status", "pending_review");
+      return (count || 0) > 0;
+    },
+    enabled: isAdmin,
+  });
 
   return (
     <Card className="group overflow-hidden border-border/60 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
@@ -38,6 +56,16 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         {isClosed && (
           <Badge className="absolute right-3 top-3 bg-primary text-primary-foreground">
             Приключила
+          </Badge>
+        )}
+        {isPending && (
+          <Badge className="absolute right-3 top-3 bg-amber-500 text-white">
+            Чака одобрение
+          </Badge>
+        )}
+        {hasPendingDraft && !isPending && (
+          <Badge className="absolute right-3 top-10 bg-orange-500 text-white">
+            Чакаща редакция
           </Badge>
         )}
       </div>

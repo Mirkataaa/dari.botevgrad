@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Megaphone, HandCoins, Users, TrendingUp } from "lucide-react";
+import { Megaphone, HandCoins, Users, TrendingUp, AlertCircle } from "lucide-react";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
     totalCampaigns: 0,
     activeCampaigns: 0,
     pendingCampaigns: 0,
+    pendingDrafts: 0,
     totalDonations: 0,
     totalAmount: 0,
     totalUsers: 0,
@@ -16,10 +17,11 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [campaignsRes, donationsRes, profilesRes] = await Promise.all([
+      const [campaignsRes, donationsRes, profilesRes, draftsRes] = await Promise.all([
         supabase.from("campaigns").select("id, status"),
         supabase.from("donations").select("amount, status"),
         supabase.from("profiles").select("id"),
+        supabase.from("campaign_drafts").select("id", { count: "exact", head: true }).eq("status", "pending_review"),
       ]);
 
       const campaigns = campaignsRes.data || [];
@@ -30,6 +32,7 @@ const AdminDashboard = () => {
         totalCampaigns: campaigns.length,
         activeCampaigns: campaigns.filter((c: any) => c.status === "active").length,
         pendingCampaigns: campaigns.filter((c: any) => c.status === "pending").length,
+        pendingDrafts: draftsRes.count || 0,
         totalDonations: donations.length,
         totalAmount: donations.reduce((sum: number, d: any) => sum + Number(d.amount), 0),
         totalUsers: profiles.length,
@@ -40,9 +43,11 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
+  const totalPending = stats.pendingCampaigns + stats.pendingDrafts;
+
   const statCards = [
     { label: "Активни кампании", value: stats.activeCampaigns, icon: Megaphone, color: "text-primary" },
-    { label: "Чакащи одобрение", value: stats.pendingCampaigns, icon: TrendingUp, color: "text-amber-500" },
+    { label: "Чакащи одобрение", value: totalPending, icon: AlertCircle, color: "text-amber-500" },
     { label: "Общо дарения", value: `${stats.totalAmount.toLocaleString("bg-BG")} €`, icon: HandCoins, color: "text-emerald-600" },
     { label: "Регистрирани потребители", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
   ];
