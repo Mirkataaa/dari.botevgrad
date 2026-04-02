@@ -53,6 +53,8 @@ const CampaignDetails = () => {
   }
 
   const isClosed = campaign.status === "completed" || campaign.status === "closed";
+  const canEdit = user && (isAdmin || user.id === campaign.created_by);
+  const images = campaign.images || [];
   const images = campaign.images || [];
 
   return (
