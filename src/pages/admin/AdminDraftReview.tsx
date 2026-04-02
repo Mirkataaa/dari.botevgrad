@@ -31,12 +31,12 @@ const AdminDraftReview = () => {
     queryKey: ["draft", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("campaign_drafts" as any)
+        .from("campaign_drafts")
         .select("*")
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data;
     },
     enabled: !!id,
   });
@@ -71,11 +71,11 @@ const AdminDraftReview = () => {
         documents: draft.documents,
         videos: draft.videos,
         main_image_index: draft.main_image_index,
-      } as any).eq("id", draft.campaign_id);
+      }).eq("id", draft.campaign_id);
       if (updateError) throw updateError;
 
       // Mark draft as approved
-      const { error: draftError } = await supabase.from("campaign_drafts" as any)
+      const { error: draftError } = await supabase.from("campaign_drafts")
         .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.id })
         .eq("id", draft.id);
       if (draftError) throw draftError;
@@ -98,13 +98,13 @@ const AdminDraftReview = () => {
     setProcessing(true);
     try {
       // Mark draft as rejected
-      const { error: draftError } = await supabase.from("campaign_drafts" as any)
+      const { error: draftError } = await supabase.from("campaign_drafts")
         .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: user.id })
         .eq("id", draft.id);
       if (draftError) throw draftError;
 
       // Store rejection reason
-      const { error: rejError } = await supabase.from("campaign_rejections" as any).insert({
+      const { error: rejError } = await supabase.from("campaign_rejections").insert({
         campaign_id: draft.campaign_id,
         draft_id: draft.id,
         rejected_by: user.id,

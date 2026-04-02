@@ -66,12 +66,12 @@ const EditCampaign = () => {
     queryKey: ["campaign-rejections", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("campaign_rejections" as any)
+        .from("campaign_rejections")
         .select("*")
         .eq("campaign_id", id!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return data;
     },
     enabled: !!id && !!user,
   });
@@ -81,7 +81,7 @@ const EditCampaign = () => {
     queryKey: ["campaign-draft", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("campaign_drafts" as any)
+        .from("campaign_drafts")
         .select("*")
         .eq("campaign_id", id!)
         .eq("status", "pending_review")
@@ -89,7 +89,7 @@ const EditCampaign = () => {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data;
     },
     enabled: !!id && !!user,
   });
@@ -235,13 +235,13 @@ const EditCampaign = () => {
           documents: allDocUrls,
           videos: cleanVideoUrls,
           main_image_index: mainImageIndex,
-        } as any).eq("id", campaign.id);
+        }).eq("id", campaign.id);
         if (error) throw error;
         toast({ title: "Кампанията е обновена" });
         navigate(`/campaign/${campaign.id}`);
       } else {
         // Creators submit a draft for review
-        const { error } = await supabase.from("campaign_drafts" as any).insert({
+        const { error } = await supabase.from("campaign_drafts").insert({
           campaign_id: campaign.id,
           submitted_by: user!.id,
           title: parsed.data.title,
