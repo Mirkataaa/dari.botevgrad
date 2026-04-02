@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil } from "lucide-react";
+import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate, Link } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
