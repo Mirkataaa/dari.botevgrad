@@ -66,12 +66,12 @@ const EditCampaign = () => {
     queryKey: ["campaign-rejections", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("campaign_rejections" as any)
+        .from("campaign_rejections")
         .select("*")
         .eq("campaign_id", id!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return data;
     },
     enabled: !!id && !!user,
   });
