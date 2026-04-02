@@ -355,6 +355,9 @@ const Profile = () => {
       )}
 
       <Separator className="my-8" />
+      <SubscriptionsSection />
+
+      <Separator className="my-8" />
       <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
         <History className="h-5 w-5" /> История на дарения
       </h2>
