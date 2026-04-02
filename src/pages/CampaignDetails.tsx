@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Tag } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft, Calendar, Tag, Pencil } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
