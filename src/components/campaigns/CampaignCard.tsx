@@ -6,6 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import CampaignProgress from "./CampaignProgress";
 import ShareWidget from "./ShareWidget";
 import type { Campaign } from "@/hooks/useCampaigns";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const categoryMap: Record<string, string> = {
   social: "Социални",
