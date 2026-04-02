@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Tag, Pencil, RefreshCw } from "lucide-react";
+import { ArrowLeft, Calendar, Tag, Pencil, RefreshCw, XCircle, Loader2, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import DonateButton from "@/components/campaigns/DonateButton";
 import ShareWidget from "@/components/campaigns/ShareWidget";
 import { useCampaign, useDonations } from "@/hooks/useCampaigns";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+import { useMySubscriptionForCampaign } from "@/hooks/useMySubscription";
+import { useCancelSubscription } from "@/hooks/useSubscriptions";
 
 const categoryMap: Record<string, string> = {
   social: "Социални",
@@ -31,6 +33,10 @@ const CampaignDetails = () => {
   const { isAdmin } = useIsAdmin();
   const { data: campaign, isLoading } = useCampaign(id || "");
   const { data: donations = [] } = useDonations(id);
+
+  const isRecurring = (campaign as any)?.campaign_type === "recurring";
+  const { data: mySubscription, isLoading: subLoading } = useMySubscriptionForCampaign(isRecurring ? id : undefined);
+  const cancelMutation = useCancelSubscription();
 
   useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"], ["donations", id || ""]]);
 
@@ -54,9 +60,9 @@ const CampaignDetails = () => {
   }
 
   const isClosed = campaign.status === "completed" || campaign.status === "closed";
-  const isRecurring = (campaign as any).campaign_type === "recurring";
   const canEdit = user && (isAdmin || user.id === campaign.created_by);
   const images = campaign.images || [];
+  const hasActiveSub = mySubscription && (mySubscription.status === "active" || mySubscription.status === "cancelling");
 
   return (
     <div className="container py-8 md:py-12">
@@ -119,33 +125,74 @@ const CampaignDetails = () => {
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} isRecurring={isRecurring} />
-                <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
-              </div>
+              {/* Subscription status or donate button */}
+              {isRecurring && hasActiveSub ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
+                    <p className="text-sm font-semibold text-primary flex items-center gap-2">
+                      <RefreshCw className="h-4 w-4" />
+                      Активен абонамент: {mySubscription.amount} €/{mySubscription.interval === "month" ? "мес." : "год."}
+                    </p>
+                    {mySubscription.current_period_end && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Следващо плащане: {new Date(mySubscription.current_period_end).toLocaleDateString("bg-BG")} в {new Date(mySubscription.current_period_end).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    )}
+                    {mySubscription.status === "cancelling" && (
+                      <p className="text-xs text-destructive">Ще бъде спрян в края на текущия период.</p>
+                    )}
+                  </div>
+                  {mySubscription.status === "active" && (
+                    <Button
+                      variant="outline"
+                      className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => cancelMutation.mutate(mySubscription.stripe_subscription_id)}
+                      disabled={cancelMutation.isPending}
+                    >
+                      {cancelMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <XCircle className="mr-2 h-4 w-4" />
+                      )}
+                      Откажи абонамент
+                    </Button>
+                  )}
+                  <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} isRecurring={isRecurring} />
+                  <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
+                </div>
+              )}
 
-              <Separator />
-
-              <div>
-                <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                  Последни дарения
-                </h3>
-                {donations.length === 0 ? (
-                  <p className="mt-3 text-sm text-muted-foreground">Все още няма дарения</p>
-                ) : (
-                  <ul className="mt-3 space-y-3">
-                    {donations.slice(0, 10).map((d) => (
-                      <li key={d.id} className="flex items-start justify-between rounded-lg bg-secondary/60 p-3">
-                        <div>
-                          <p className="text-sm font-medium">{d.is_anonymous ? "Анонимен" : (d.donor_name || "Дарител")}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("bg-BG")}</p>
-                        </div>
-                        <span className="text-sm font-bold text-primary">{Number(d.amount)} €</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              {/* Show donations list only for one-time campaigns */}
+              {!isRecurring && (
+                <>
+                  <Separator />
+                  <div>
+                    <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                      Последни дарения
+                    </h3>
+                    {donations.length === 0 ? (
+                      <p className="mt-3 text-sm text-muted-foreground">Все още няма дарения</p>
+                    ) : (
+                      <ul className="mt-3 space-y-3">
+                        {donations.slice(0, 10).map((d) => (
+                          <li key={d.id} className="flex items-start justify-between rounded-lg bg-secondary/60 p-3">
+                            <div>
+                              <p className="text-sm font-medium">{d.is_anonymous ? "Анонимен" : (d.donor_name || "Дарител")}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("bg-BG")}</p>
+                            </div>
+                            <span className="text-sm font-bold text-primary">{Number(d.amount)} €</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
