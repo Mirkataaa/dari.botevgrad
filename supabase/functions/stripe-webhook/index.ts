@@ -55,6 +55,11 @@ serve(async (req) => {
         ? session.customer
         : session.customer?.id || "";
 
+      // Retrieve subscription from Stripe to get current_period_end
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+      const periodEnd = new Date(stripeSubscription.current_period_end * 1000).toISOString();
+      const subInterval = stripeSubscription.items.data[0]?.price?.recurring?.interval || "month";
+
       await supabase.from("subscriptions").upsert({
         stripe_subscription_id: subscriptionId,
         stripe_customer_id: customerId,
@@ -62,11 +67,35 @@ serve(async (req) => {
         donor_id: meta.donor_id || null,
         donor_email: session.customer_details?.email || "",
         amount: Number(meta.amount) || 0,
-        interval: "month",
+        interval: subInterval,
         status: "active",
+        current_period_end: periodEnd,
       }, { onConflict: "stripe_subscription_id" });
 
       console.log("[stripe-webhook] Subscription record created:", subscriptionId);
+
+      // Create donation record for the first subscription payment
+      const firstAmount = Number(meta.amount) || (session.amount_total ? session.amount_total / 100 : 0);
+      if (firstAmount > 0) {
+        const { data: firstDonation } = await supabase
+          .from("donations")
+          .insert({
+            campaign_id: meta.campaign_id,
+            amount: firstAmount,
+            donor_id: meta.donor_id || null,
+            donor_name: session.customer_details?.name || null,
+            is_anonymous: false,
+            status: "completed",
+            stripe_payment_id: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null,
+          })
+          .select("id, campaign_id, amount")
+          .single();
+
+        if (firstDonation) {
+          await updateCampaignAmount(supabase, firstDonation);
+          console.log("[stripe-webhook] First subscription donation recorded:", firstDonation.id);
+        }
+      }
     }
 
     // Handle one-time payment
