@@ -55,6 +55,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboard />} />
               <Route path="campaigns" element={<AdminCampaigns />} />
+              <Route path="campaigns/:id" element={<AdminCampaignPreview />} />
               <Route path="donations" element={<AdminDonations />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="comments" element={<AdminComments />} />
