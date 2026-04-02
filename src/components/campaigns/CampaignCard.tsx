@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +23,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
   const isClosed = status === "completed" || status === "closed";
   const isPending = status === "pending";
+  const isRecurring = (campaign as any).campaign_type === "recurring";
   const mainIndex = (campaign as any).main_image_index || 0;
   const imageUrl = images?.[mainIndex] || images?.[0];
   const { isAdmin } = useIsAdmin();
@@ -81,12 +82,20 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
           {short_description || ""}
         </p>
 
-        <CampaignProgress collected={Number(current_amount)} target={Number(target_amount)} size="sm" />
+        {!isRecurring && (
+          <CampaignProgress collected={Number(current_amount)} target={Number(target_amount)} size="sm" />
+        )}
+        {isRecurring && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Периодична кампания · {Number(current_amount)} € събрани</span>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 pt-1">
           <Button asChild className="flex-1" size="sm" disabled={isClosed}>
             <Link to={`/campaign/${id}`}>
-              {isClosed ? "Приключила" : "Дари сега"}
+              {isClosed ? "Приключила" : isRecurring ? "Подкрепи" : "Дари сега"}
             </Link>
           </Button>
           <ShareWidget campaignId={id} campaignTitle={title} campaignImage={imageUrl} />

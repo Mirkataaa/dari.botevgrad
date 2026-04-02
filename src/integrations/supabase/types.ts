@@ -192,6 +192,7 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          campaign_type: Database["public"]["Enums"]["campaign_type"]
           category: Database["public"]["Enums"]["campaign_category"]
           created_at: string
           created_by: string | null
@@ -211,6 +212,7 @@ export type Database = {
           videos: string[] | null
         }
         Insert: {
+          campaign_type?: Database["public"]["Enums"]["campaign_type"]
           category: Database["public"]["Enums"]["campaign_category"]
           created_at?: string
           created_by?: string | null
@@ -230,6 +232,7 @@ export type Database = {
           videos?: string[] | null
         }
         Update: {
+          campaign_type?: Database["public"]["Enums"]["campaign_type"]
           category?: Database["public"]["Enums"]["campaign_category"]
           created_at?: string
           created_by?: string | null
@@ -520,6 +523,59 @@ export type Database = {
         }
         Relationships: []
       }
+      subscriptions: {
+        Row: {
+          amount: number
+          campaign_id: string
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          donor_email: string
+          donor_id: string | null
+          id: string
+          interval: string
+          status: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+        }
+        Insert: {
+          amount: number
+          campaign_id: string
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          donor_email: string
+          donor_id?: string | null
+          id?: string
+          interval?: string
+          status?: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+        }
+        Update: {
+          amount?: number
+          campaign_id?: string
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          donor_email?: string
+          donor_id?: string | null
+          id?: string
+          interval?: string
+          status?: string
+          stripe_customer_id?: string
+          stripe_subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppressed_emails: {
         Row: {
           created_at: string
@@ -719,6 +775,7 @@ export type Database = {
         | "rejected"
         | "stopped"
         | "closed"
+      campaign_type: "one_time" | "recurring"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -863,6 +920,7 @@ export const Constants = {
         "stopped",
         "closed",
       ],
+      campaign_type: ["one_time", "recurring"],
     },
   },
 } as const

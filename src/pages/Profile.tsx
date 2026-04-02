@@ -11,7 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle } from "lucide-react";
+import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle } from "lucide-react";
+import { useMySubscriptions, useCancelSubscription } from "@/hooks/useSubscriptions";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate, Link } from "react-router-dom";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -354,6 +355,9 @@ const Profile = () => {
       )}
 
       <Separator className="my-8" />
+      <SubscriptionsSection />
+
+      <Separator className="my-8" />
       <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
         <History className="h-5 w-5" /> История на дарения
       </h2>
@@ -392,6 +396,63 @@ const Profile = () => {
         </div>
       )}
     </div>
+  );
+};
+
+const SubscriptionsSection = () => {
+  const { data: subscriptions = [], isLoading } = useMySubscriptions();
+  const cancelMutation = useCancelSubscription();
+
+  const activeOrCancelling = subscriptions.filter((s) => s.status === "active" || s.status === "cancelling");
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-6">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <h2 className="flex items-center gap-2 font-heading text-xl font-bold">
+        <RefreshCw className="h-5 w-5" /> Моите абонаменти
+      </h2>
+      {activeOrCancelling.length === 0 ? (
+        <p className="py-6 text-center text-muted-foreground">Нямате активни абонаменти.</p>
+      ) : (
+        <div className="mt-4 space-y-3">
+          {activeOrCancelling.map((sub) => (
+            <Card key={sub.id}>
+              <CardContent className="flex items-center justify-between gap-4 p-4">
+                <div className="space-y-1">
+                  <p className="font-medium">{Number(sub.amount)} € / {sub.interval === "month" ? "месец" : "година"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    От {new Date(sub.created_at).toLocaleDateString("bg-BG")}
+                    {sub.current_period_end && ` · Следващо плащане: ${new Date(sub.current_period_end).toLocaleDateString("bg-BG")}`}
+                  </p>
+                  {sub.status === "cancelling" && (
+                    <Badge variant="outline" className="text-destructive border-destructive/30">Отменен (активен до края на периода)</Badge>
+                  )}
+                </div>
+                {sub.status === "active" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 text-destructive hover:text-destructive"
+                    onClick={() => cancelMutation.mutate(sub.id)}
+                    disabled={cancelMutation.isPending}
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Отмени
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </>
   );
 };
 

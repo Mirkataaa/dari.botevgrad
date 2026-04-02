@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus, X, Loader2, FileUp, Video, Star } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ImagePlus, X, Loader2, FileUp, Video, Star, RefreshCw } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -31,8 +32,9 @@ const campaignSchema = z.object({
   category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"], {
     required_error: "Изберете категория",
   }),
-  target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000, "Максимална сума: 1 000 000 €"),
+  target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000, "Максимална сума: 1 000 000 €").optional(),
   deadline: z.string().optional(),
+  isRecurring: z.boolean(),
 });
 
 const CreateCampaign = () => {
@@ -46,6 +48,7 @@ const CreateCampaign = () => {
   const [category, setCategory] = useState<CampaignCategory | "">("");
   const [targetAmount, setTargetAmount] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [documents, setDocuments] = useState<File[]>([]);
@@ -136,8 +139,9 @@ const CreateCampaign = () => {
       short_description: shortDesc,
       description,
       category: category || undefined,
-      target_amount: Number(targetAmount),
+      target_amount: isRecurring ? undefined : Number(targetAmount),
       deadline: deadline || undefined,
+      isRecurring,
     });
 
     if (!parsed.success) {
@@ -146,6 +150,11 @@ const CreateCampaign = () => {
         fieldErrors[issue.path[0] as string] = issue.message;
       });
       setErrors(fieldErrors);
+      return;
+    }
+
+    if (!isRecurring && (!Number(targetAmount) || Number(targetAmount) < 100)) {
+      setErrors({ target_amount: "Минимална сума: 100 €" });
       return;
     }
 
@@ -163,14 +172,15 @@ const CreateCampaign = () => {
         short_description: parsed.data.short_description,
         description: parsed.data.description,
         category: parsed.data.category,
-        target_amount: parsed.data.target_amount,
-        deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
+        target_amount: isRecurring ? 0 : Number(targetAmount),
+        deadline: isRecurring ? null : (parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null),
         images: imageUrls,
         documents: docUrls,
         videos: cleanVideoUrls,
         created_by: user!.id,
         status: "pending",
         main_image_index: mainImageIndex,
+        campaign_type: isRecurring ? "recurring" : "one_time",
       } as any);
 
       if (error) throw error;
@@ -216,6 +226,20 @@ const CreateCampaign = () => {
               {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
             </div>
 
+            {/* Campaign type toggle */}
+            <div className="flex items-center gap-3 rounded-lg border p-4">
+              <RefreshCw className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <Label htmlFor="recurring-toggle" className="text-sm font-medium">Периодична кампания</Label>
+                <p className="text-xs text-muted-foreground">Позволява абонаментни дарения (месечни/годишни)</p>
+              </div>
+              <Switch
+                id="recurring-toggle"
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+              />
+            </div>
+
             {/* Short description */}
             <div className="space-y-2">
               <Label htmlFor="short_desc">Кратко описание *</Label>
@@ -232,18 +256,22 @@ const CreateCampaign = () => {
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
 
-            {/* Target amount */}
-            <div className="space-y-2">
-              <Label htmlFor="target">Целева сума (€) *</Label>
-              <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} placeholder="10000" />
-              {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
-            </div>
+            {/* Target amount - only for one-time campaigns */}
+            {!isRecurring && (
+              <div className="space-y-2">
+                <Label htmlFor="target">Целева сума (€) *</Label>
+                <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} placeholder="10000" />
+                {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
+              </div>
+            )}
 
-            {/* Deadline */}
-            <div className="space-y-2">
-              <Label htmlFor="deadline">Краен срок (по избор)</Label>
-              <Input id="deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split("T")[0]} />
-            </div>
+            {/* Deadline - only for one-time campaigns */}
+            {!isRecurring && (
+              <div className="space-y-2">
+                <Label htmlFor="deadline">Краен срок (по избор)</Label>
+                <Input id="deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+              </div>
+            )}
 
             {/* Images */}
             <div className="space-y-2">
