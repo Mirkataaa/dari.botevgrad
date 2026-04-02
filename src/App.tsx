@@ -20,6 +20,7 @@ import OrgOrAdminRoute from "@/components/admin/OrgOrAdminRoute";
 import CreateCampaign from "./pages/CreateCampaign";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCampaigns from "./pages/admin/AdminCampaigns";
+import AdminCampaignPreview from "./pages/admin/AdminCampaignPreview";
 import AdminDonations from "./pages/admin/AdminDonations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminComments from "./pages/admin/AdminComments";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboard />} />
               <Route path="campaigns" element={<AdminCampaigns />} />
+              <Route path="campaigns/:id" element={<AdminCampaignPreview />} />
               <Route path="donations" element={<AdminDonations />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="comments" element={<AdminComments />} />

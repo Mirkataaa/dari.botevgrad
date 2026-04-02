@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Search, Lock, Star, Play } from "lucide-react";
+import { Check, X, Search, Lock, Star, Play, Eye, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const statusLabels: Record<string, string> = {
   pending: "Чакаща",
@@ -59,6 +71,35 @@ const AdminCampaigns = () => {
       toast({ variant: "destructive", title: "Грешка", description: error.message });
     } else {
       toast({ title: "Статусът е обновен" });
+      fetchCampaigns();
+    }
+  };
+
+  const deleteCampaign = async (campaign: any) => {
+    // Delete storage files first
+    const buckets = [
+      { bucket: "campaign-images", files: campaign.images },
+      { bucket: "campaign-documents", files: campaign.documents },
+    ];
+    for (const { bucket, files } of buckets) {
+      if (files && files.length > 0) {
+        const paths = files.map((url: string) => {
+          try {
+            const parts = new URL(url).pathname.split("/");
+            return parts.slice(parts.indexOf(bucket) + 1).join("/");
+          } catch { return null; }
+        }).filter(Boolean);
+        if (paths.length > 0) {
+          await supabase.storage.from(bucket).remove(paths);
+        }
+      }
+    }
+    // Delete campaign record
+    const { error } = await supabase.from("campaigns").delete().eq("id", campaign.id);
+    if (error) {
+      toast({ variant: "destructive", title: "Грешка", description: error.message });
+    } else {
+      toast({ title: "Кампанията е изтрита" });
       fetchCampaigns();
     }
   };
@@ -144,6 +185,12 @@ const AdminCampaigns = () => {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to={`/admin/campaigns/${campaign.id}`}>
+                      <Eye className="mr-1 h-4 w-4" /> Преглед
+                    </Link>
+                  </Button>
+
                   {["active", "completed", "closed"].includes(campaign.status) && (
                     <div className="flex items-center gap-1.5">
                       <Switch
@@ -174,6 +221,28 @@ const AdminCampaigns = () => {
                       <Play className="mr-1 h-4 w-4" /> Отвори отново
                     </Button>
                   )}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Изтриване на кампания</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Сигурни ли сте, че искате да изтриете "{campaign.title}"? Това действие е необратимо и ще премахне всички свързани файлове.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Отказ</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteCampaign(campaign)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Изтрий
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>

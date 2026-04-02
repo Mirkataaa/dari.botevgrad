@@ -522,6 +522,7 @@ export type Database = {
       }
     }
     Functions: {
+      close_expired_campaigns: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

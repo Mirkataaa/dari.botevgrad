@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ImageIcon, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, Calendar, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import CampaignProgress from "@/components/campaigns/CampaignProgress";
 import CampaignComments from "@/components/campaigns/CampaignComments";
 import CampaignUpdates from "@/components/campaigns/CampaignUpdates";
+import CampaignImageGallery from "@/components/campaigns/CampaignImageGallery";
+import CampaignDocuments from "@/components/campaigns/CampaignDocuments";
 import DonateButton from "@/components/campaigns/DonateButton";
 import ShareWidget from "@/components/campaigns/ShareWidget";
 import { useCampaign, useDonations } from "@/hooks/useCampaigns";
@@ -48,7 +50,7 @@ const CampaignDetails = () => {
   }
 
   const isClosed = campaign.status === "completed" || campaign.status === "closed";
-  const imageUrl = campaign.images?.[0];
+  const images = campaign.images || [];
 
   return (
     <div className="container py-8 md:py-12">
@@ -58,15 +60,7 @@ const CampaignDetails = () => {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
-          <div className="aspect-video overflow-hidden rounded-xl bg-secondary">
-            {imageUrl ? (
-              <img src={imageUrl} alt={campaign.title} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                <ImageIcon className="h-16 w-16" />
-              </div>
-            )}
-          </div>
+          <CampaignImageGallery images={images} title={campaign.title} />
 
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="gap-1">
@@ -81,6 +75,13 @@ const CampaignDetails = () => {
           <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
           <p className="text-lg leading-relaxed text-muted-foreground">{campaign.description}</p>
 
+          {campaign.documents && campaign.documents.length > 0 && (
+            <>
+              <Separator />
+              <CampaignDocuments documents={campaign.documents} />
+            </>
+          )}
+
           <Separator />
           <CampaignUpdates campaignId={campaign.id} campaignCreatorId={campaign.created_by} />
           <Separator />
@@ -94,7 +95,7 @@ const CampaignDetails = () => {
 
               <div className="flex gap-3">
                 <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} />
-                <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={imageUrl} />
+                <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
               </div>
 
               <Separator />
