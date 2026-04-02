@@ -101,6 +101,15 @@ const Profile = () => {
     }
   }, [profile]);
 
+  // Mark rejection notifications as seen when creator visits profile
+  useEffect(() => {
+    if (notifications?.rejectedCampaignIds && notifications.rejectedCampaignIds.length > 0) {
+      markAllRejectionsAsSeen(notifications.rejectedCampaignIds).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      });
+    }
+  }, [notifications?.rejectedCampaignIds, queryClient]);
+
   if (authLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
