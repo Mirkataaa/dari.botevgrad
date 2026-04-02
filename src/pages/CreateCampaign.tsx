@@ -52,6 +52,7 @@ const CreateCampaign = () => {
   const [videoUrls, setVideoUrls] = useState<string[]>([""]);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [mainImageIndex, setMainImageIndex] = useState(0);
 
   // --- Image handling ---
   const handleImageAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
