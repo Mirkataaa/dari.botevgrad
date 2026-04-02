@@ -26,6 +26,8 @@ const categoryMap: Record<string, string> = {
 
 const CampaignDetails = () => {
   const { id } = useParams();
+  const { user } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const { data: campaign, isLoading } = useCampaign(id || "");
   const { data: donations = [] } = useDonations(id);
 
