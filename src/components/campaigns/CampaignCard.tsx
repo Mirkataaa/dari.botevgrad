@@ -23,6 +23,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
   const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
   const isClosed = status === "completed" || status === "closed";
   const isPending = status === "pending";
+  const isRecurring = (campaign as any).campaign_type === "recurring";
   const mainIndex = (campaign as any).main_image_index || 0;
   const imageUrl = images?.[mainIndex] || images?.[0];
   const { isAdmin } = useIsAdmin();
