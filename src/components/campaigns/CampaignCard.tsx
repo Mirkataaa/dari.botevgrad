@@ -58,6 +58,16 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
             Приключила
           </Badge>
         )}
+        {isPending && (
+          <Badge className="absolute right-3 top-3 bg-amber-500 text-white">
+            Чака одобрение
+          </Badge>
+        )}
+        {hasPendingDraft && !isPending && (
+          <Badge className="absolute right-3 top-10 bg-orange-500 text-white">
+            Чакаща редакция
+          </Badge>
+        )}
       </div>
 
       <CardContent className="space-y-4 p-5">
