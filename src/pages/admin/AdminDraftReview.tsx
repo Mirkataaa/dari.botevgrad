@@ -98,7 +98,7 @@ const AdminDraftReview = () => {
     setProcessing(true);
     try {
       // Mark draft as rejected
-      const { error: draftError } = await supabase.from("campaign_drafts" as any)
+      const { error: draftError } = await supabase.from("campaign_drafts")
         .update({ status: "rejected", reviewed_at: new Date().toISOString(), reviewed_by: user.id })
         .eq("id", draft.id);
       if (draftError) throw draftError;
