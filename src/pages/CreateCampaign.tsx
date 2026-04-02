@@ -139,8 +139,9 @@ const CreateCampaign = () => {
       short_description: shortDesc,
       description,
       category: category || undefined,
-      target_amount: Number(targetAmount),
+      target_amount: isRecurring ? undefined : Number(targetAmount),
       deadline: deadline || undefined,
+      isRecurring,
     });
 
     if (!parsed.success) {
@@ -149,6 +150,11 @@ const CreateCampaign = () => {
         fieldErrors[issue.path[0] as string] = issue.message;
       });
       setErrors(fieldErrors);
+      return;
+    }
+
+    if (!isRecurring && (!Number(targetAmount) || Number(targetAmount) < 100)) {
+      setErrors({ target_amount: "Минимална сума: 100 €" });
       return;
     }
 
@@ -166,14 +172,15 @@ const CreateCampaign = () => {
         short_description: parsed.data.short_description,
         description: parsed.data.description,
         category: parsed.data.category,
-        target_amount: parsed.data.target_amount,
-        deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
+        target_amount: isRecurring ? 0 : Number(targetAmount),
+        deadline: isRecurring ? null : (parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null),
         images: imageUrls,
         documents: docUrls,
         videos: cleanVideoUrls,
         created_by: user!.id,
         status: "pending",
         main_image_index: mainImageIndex,
+        campaign_type: isRecurring ? "recurring" : "one_time",
       } as any);
 
       if (error) throw error;
