@@ -95,7 +95,7 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         <div className="flex items-center gap-2 pt-1">
           <Button asChild className="flex-1" size="sm" disabled={isClosed}>
             <Link to={`/campaign/${id}`}>
-              {isClosed ? "Приключила" : "Дари сега"}
+              {isClosed ? "Приключила" : isRecurring ? "Подкрепи" : "Дари сега"}
             </Link>
           </Button>
           <ShareWidget campaignId={id} campaignTitle={title} campaignImage={imageUrl} />
