@@ -78,6 +78,13 @@ const CampaignDetails = () => {
           </div>
 
           <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
+          {canEdit && (
+            <Button asChild variant="outline" size="sm" className="gap-1 mt-2 w-fit">
+              <Link to={`/campaign/${campaign.id}/edit`}>
+                <Pencil className="h-4 w-4" /> Редактирай
+              </Link>
+            </Button>
+          )}
           <p className="text-lg leading-relaxed text-muted-foreground">{campaign.description}</p>
 
           {campaign.documents && campaign.documents.length > 0 && (
