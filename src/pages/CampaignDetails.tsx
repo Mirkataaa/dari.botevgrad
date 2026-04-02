@@ -50,7 +50,7 @@ const CampaignDetails = () => {
   }
 
   const isClosed = campaign.status === "completed" || campaign.status === "closed";
-  const imageUrl = campaign.images?.[0];
+  const images = campaign.images || [];
 
   return (
     <div className="container py-8 md:py-12">
@@ -60,15 +60,7 @@ const CampaignDetails = () => {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
-          <div className="aspect-video overflow-hidden rounded-xl bg-secondary">
-            {imageUrl ? (
-              <img src={imageUrl} alt={campaign.title} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                <ImageIcon className="h-16 w-16" />
-              </div>
-            )}
-          </div>
+          <CampaignImageGallery images={images} title={campaign.title} />
 
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="gap-1">
