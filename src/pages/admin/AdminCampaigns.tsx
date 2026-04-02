@@ -154,6 +154,34 @@ const AdminCampaigns = () => {
     <div>
       <h1 className="mb-6 font-heading text-2xl font-bold">Управление на кампании</h1>
 
+      {/* Pending drafts section */}
+      {pendingDrafts.length > 0 && (
+        <div className="mb-6">
+          <h2 className="mb-3 font-heading text-lg font-semibold text-amber-700">
+            Чакащи редакции ({pendingDrafts.length})
+          </h2>
+          <div className="space-y-2">
+            {pendingDrafts.map((draft: any) => (
+              <Card key={draft.id} className="border-amber-200 bg-amber-50/50">
+                <CardContent className="flex items-center justify-between gap-3 p-4">
+                  <div>
+                    <p className="font-semibold">{draft.title}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Кампания: {(draft.campaigns as any)?.title || "—"} · {new Date(draft.created_at).toLocaleDateString("bg-BG")}
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="outline">
+                    <Link to={`/admin/drafts/${draft.id}`}>
+                      <FileEdit className="mr-1 h-4 w-4" /> Прегледай
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input placeholder="Търсене..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
