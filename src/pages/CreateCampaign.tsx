@@ -265,11 +265,13 @@ const CreateCampaign = () => {
               </div>
             )
 
-            {/* Deadline */}
-            <div className="space-y-2">
-              <Label htmlFor="deadline">Краен срок (по избор)</Label>
-              <Input id="deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split("T")[0]} />
-            </div>
+            {/* Deadline - only for one-time campaigns */}
+            {!isRecurring && (
+              <div className="space-y-2">
+                <Label htmlFor="deadline">Краен срок (по избор)</Label>
+                <Input id="deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} min={new Date().toISOString().split("T")[0]} />
+              </div>
+            )}
 
             {/* Images */}
             <div className="space-y-2">
