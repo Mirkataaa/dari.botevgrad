@@ -81,7 +81,7 @@ const EditCampaign = () => {
     queryKey: ["campaign-draft", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("campaign_drafts" as any)
+        .from("campaign_drafts")
         .select("*")
         .eq("campaign_id", id!)
         .eq("status", "pending_review")
@@ -89,7 +89,7 @@ const EditCampaign = () => {
         .limit(1)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data;
     },
     enabled: !!id && !!user,
   });
