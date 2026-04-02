@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import CampaignProgress from "@/components/campaigns/CampaignProgress";
 import CampaignImageGallery from "@/components/campaigns/CampaignImageGallery";
 import CampaignDocuments from "@/components/campaigns/CampaignDocuments";
+import CampaignVersionHistory from "@/components/campaigns/CampaignVersionHistory";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
