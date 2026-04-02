@@ -263,7 +263,7 @@ const CreateCampaign = () => {
                 <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} placeholder="10000" />
                 {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
               </div>
-            )
+            )}
 
             {/* Deadline - only for one-time campaigns */}
             {!isRecurring && (
