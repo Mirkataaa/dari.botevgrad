@@ -48,6 +48,7 @@ const CreateCampaign = () => {
   const [category, setCategory] = useState<CampaignCategory | "">("");
   const [targetAmount, setTargetAmount] = useState("");
   const [deadline, setDeadline] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [documents, setDocuments] = useState<File[]>([]);
