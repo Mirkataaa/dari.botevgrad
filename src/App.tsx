@@ -48,6 +48,7 @@ const App = () => (
             <Route element={<Layout><About /></Layout>} path="/about" />
             <Route element={<Layout><Profile /></Layout>} path="/profile" />
             <Route element={<OrgOrAdminRoute><Layout><CreateCampaign /></Layout></OrgOrAdminRoute>} path="/campaigns/create" />
+            <Route element={<Layout><EditCampaign /></Layout>} path="/campaign/:id/edit" />
             <Route element={<Layout><Login /></Layout>} path="/login" />
             <Route element={<Layout><Register /></Layout>} path="/register" />
             <Route element={<Layout><ResetPassword /></Layout>} path="/reset-password" />
