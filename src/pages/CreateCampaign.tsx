@@ -246,7 +246,7 @@ const CreateCampaign = () => {
 
             {/* Images */}
             <div className="space-y-2">
-              <Label>Снимки (до 5)</Label>
+              <Label>Снимки (до 5) — кликнете ★ за главна снимка</Label>
               <div className="flex flex-wrap gap-3">
                 {imagePreviews.map((src, i) => (
                   <div key={i} className="relative h-24 w-24 overflow-hidden rounded-lg border">
