@@ -75,7 +75,7 @@ const AdminDraftReview = () => {
       if (updateError) throw updateError;
 
       // Mark draft as approved
-      const { error: draftError } = await supabase.from("campaign_drafts" as any)
+      const { error: draftError } = await supabase.from("campaign_drafts")
         .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: user.id })
         .eq("id", draft.id);
       if (draftError) throw draftError;
