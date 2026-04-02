@@ -104,7 +104,7 @@ const AdminDraftReview = () => {
       if (draftError) throw draftError;
 
       // Store rejection reason
-      const { error: rejError } = await supabase.from("campaign_rejections" as any).insert({
+      const { error: rejError } = await supabase.from("campaign_rejections").insert({
         campaign_id: draft.campaign_id,
         draft_id: draft.id,
         rejected_by: user.id,

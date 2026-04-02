@@ -241,7 +241,7 @@ const EditCampaign = () => {
         navigate(`/campaign/${campaign.id}`);
       } else {
         // Creators submit a draft for review
-        const { error } = await supabase.from("campaign_drafts" as any).insert({
+        const { error } = await supabase.from("campaign_drafts").insert({
           campaign_id: campaign.id,
           submitted_by: user!.id,
           title: parsed.data.title,

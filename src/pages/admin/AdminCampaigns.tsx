@@ -72,12 +72,12 @@ const AdminCampaigns = () => {
     queryKey: ["pending-drafts"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("campaign_drafts" as any)
+        .from("campaign_drafts")
         .select("*, campaigns:campaign_id(title)")
         .eq("status", "pending_review")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as any[];
+      return data;
     },
   });
 
