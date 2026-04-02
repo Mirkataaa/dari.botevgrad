@@ -71,7 +71,7 @@ const AdminDraftReview = () => {
         documents: draft.documents,
         videos: draft.videos,
         main_image_index: draft.main_image_index,
-      } as any).eq("id", draft.campaign_id);
+      }).eq("id", draft.campaign_id);
       if (updateError) throw updateError;
 
       // Mark draft as approved
