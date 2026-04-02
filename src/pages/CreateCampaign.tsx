@@ -254,6 +254,9 @@ const CreateCampaign = () => {
                     <button type="button" onClick={() => removeImage(i)} className="absolute right-1 top-1 rounded-full bg-destructive p-0.5 text-destructive-foreground">
                       <X className="h-3 w-3" />
                     </button>
+                    <button type="button" onClick={() => setMainImageIndex(i)} className={`absolute left-1 top-1 rounded-full p-0.5 ${mainImageIndex === i ? 'bg-yellow-400 text-yellow-900' : 'bg-black/40 text-white'}`}>
+                      <Star className="h-3 w-3" />
+                    </button>
                   </div>
                 ))}
                 {images.length < 5 && (
