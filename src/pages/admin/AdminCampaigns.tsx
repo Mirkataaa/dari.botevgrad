@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X, Search, Lock, Star, Play, Eye, Trash2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Check, X, Search, Lock, Star, Play, Eye, Trash2, FileEdit } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +54,7 @@ const AdminCampaigns = () => {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const fetchCampaigns = async () => {
     const { data, error } = await supabase
@@ -64,6 +66,20 @@ const AdminCampaigns = () => {
   };
 
   useEffect(() => { fetchCampaigns(); }, []);
+
+  // Fetch pending drafts
+  const { data: pendingDrafts = [] } = useQuery({
+    queryKey: ["pending-drafts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaign_drafts" as any)
+        .select("*, campaigns:campaign_id(title)")
+        .eq("status", "pending_review")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
 
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from("campaigns").update({ status } as any).eq("id", id);
