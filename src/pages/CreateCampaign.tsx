@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus, X, Loader2, FileUp, Video } from "lucide-react";
+import { ImagePlus, X, Loader2, FileUp, Video, Star } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
