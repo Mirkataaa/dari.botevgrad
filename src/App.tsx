@@ -25,6 +25,8 @@ import AdminDonations from "./pages/admin/AdminDonations";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminComments from "./pages/admin/AdminComments";
 import AdminContacts from "./pages/admin/AdminContacts";
+import AdminDraftReview from "./pages/admin/AdminDraftReview";
+import EditCampaign from "./pages/EditCampaign";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Unsubscribe from "./pages/Unsubscribe";
 import NotFound from "./pages/NotFound";
