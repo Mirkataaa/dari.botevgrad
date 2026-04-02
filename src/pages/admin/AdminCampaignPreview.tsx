@@ -160,8 +160,9 @@ const AdminCampaignPreview = () => {
               </div>
             </CardContent>
           </Card>
+
+          <CampaignVersionHistory campaignId={campaign.id} />
         </div>
-      </div>
     </div>
   );
 };
