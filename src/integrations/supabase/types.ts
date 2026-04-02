@@ -14,6 +14,109 @@ export type Database = {
   }
   public: {
     Tables: {
+      campaign_drafts: {
+        Row: {
+          campaign_id: string
+          category: Database["public"]["Enums"]["campaign_category"]
+          created_at: string
+          deadline: string | null
+          description: string
+          documents: string[] | null
+          id: string
+          images: string[] | null
+          main_image_index: number
+          reviewed_at: string | null
+          reviewed_by: string | null
+          short_description: string | null
+          status: string
+          submitted_by: string
+          target_amount: number
+          title: string
+          videos: string[] | null
+        }
+        Insert: {
+          campaign_id: string
+          category: Database["public"]["Enums"]["campaign_category"]
+          created_at?: string
+          deadline?: string | null
+          description: string
+          documents?: string[] | null
+          id?: string
+          images?: string[] | null
+          main_image_index?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          short_description?: string | null
+          status?: string
+          submitted_by: string
+          target_amount: number
+          title: string
+          videos?: string[] | null
+        }
+        Update: {
+          campaign_id?: string
+          category?: Database["public"]["Enums"]["campaign_category"]
+          created_at?: string
+          deadline?: string | null
+          description?: string
+          documents?: string[] | null
+          id?: string
+          images?: string[] | null
+          main_image_index?: number
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          short_description?: string | null
+          status?: string
+          submitted_by?: string
+          target_amount?: number
+          title?: string
+          videos?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_drafts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaign_rejections: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          draft_id: string | null
+          id: string
+          reason: string
+          rejected_by: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          draft_id?: string | null
+          id?: string
+          reason: string
+          rejected_by: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          draft_id?: string | null
+          id?: string
+          reason?: string
+          rejected_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_rejections_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_updates: {
         Row: {
           campaign_id: string
@@ -49,6 +152,41 @@ export type Database = {
           },
         ]
       }
+      campaign_versions: {
+        Row: {
+          campaign_id: string
+          change_type: string
+          changed_by: string
+          created_at: string
+          id: string
+          snapshot: Json
+        }
+        Insert: {
+          campaign_id: string
+          change_type: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          snapshot: Json
+        }
+        Update: {
+          campaign_id?: string
+          change_type?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_versions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           category: Database["public"]["Enums"]["campaign_category"]
@@ -61,6 +199,7 @@ export type Database = {
           id: string
           images: string[] | null
           is_recommended: boolean
+          main_image_index: number
           short_description: string | null
           status: Database["public"]["Enums"]["campaign_status"]
           target_amount: number
@@ -79,6 +218,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_recommended?: boolean
+          main_image_index?: number
           short_description?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_amount: number
@@ -97,6 +237,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_recommended?: boolean
+          main_image_index?: number
           short_description?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_amount?: number
