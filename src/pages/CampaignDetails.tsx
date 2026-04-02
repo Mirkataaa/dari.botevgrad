@@ -88,7 +88,7 @@ const CampaignDetails = () => {
 
               <div className="flex gap-3">
                 <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} />
-                <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={imageUrl} />
+                <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
               </div>
 
               <Separator />
