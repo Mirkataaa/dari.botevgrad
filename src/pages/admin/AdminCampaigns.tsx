@@ -185,6 +185,12 @@ const AdminCampaigns = () => {
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2">
+                  <Button asChild size="sm" variant="ghost">
+                    <Link to={`/admin/campaigns/${campaign.id}`}>
+                      <Eye className="mr-1 h-4 w-4" /> Преглед
+                    </Link>
+                  </Button>
+
                   {["active", "completed", "closed"].includes(campaign.status) && (
                     <div className="flex items-center gap-1.5">
                       <Switch
@@ -215,6 +221,28 @@ const AdminCampaigns = () => {
                       <Play className="mr-1 h-4 w-4" /> Отвори отново
                     </Button>
                   )}
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Изтриване на кампания</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Сигурни ли сте, че искате да изтриете "{campaign.title}"? Това действие е необратимо и ще премахне всички свързани файлове.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Отказ</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteCampaign(campaign)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Изтрий
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </CardContent>
             </Card>
