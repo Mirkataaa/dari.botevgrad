@@ -58,6 +58,14 @@ const DonateButton = ({ campaignId, campaignTitle, disabled, isRecurring }: Prop
     setError(null);
 
     try {
+      // Refresh session to ensure valid token is sent to edge function
+      if (isRecurring) {
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          throw new Error("Сесията е изтекла. Моля, влезте отново.");
+        }
+      }
+
       const functionName = isRecurring ? "create-subscription" : "create-checkout";
       const body = isRecurring
         ? { campaignId, amount: numAmount, interval }
