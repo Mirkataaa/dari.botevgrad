@@ -170,6 +170,7 @@ const CreateCampaign = () => {
         videos: cleanVideoUrls,
         created_by: user!.id,
         status: "pending",
+        main_image_index: mainImageIndex,
       } as any);
 
       if (error) throw error;
