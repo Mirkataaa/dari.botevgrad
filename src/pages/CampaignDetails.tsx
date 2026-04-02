@@ -75,6 +75,13 @@ const CampaignDetails = () => {
           <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
           <p className="text-lg leading-relaxed text-muted-foreground">{campaign.description}</p>
 
+          {campaign.documents && campaign.documents.length > 0 && (
+            <>
+              <Separator />
+              <CampaignDocuments documents={campaign.documents} />
+            </>
+          )}
+
           <Separator />
           <CampaignUpdates campaignId={campaign.id} campaignCreatorId={campaign.created_by} />
           <Separator />
