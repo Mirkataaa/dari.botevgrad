@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ImagePlus, X, Loader2, FileUp, Video, Star } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { ImagePlus, X, Loader2, FileUp, Video, Star, RefreshCw } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -31,8 +32,9 @@ const campaignSchema = z.object({
   category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"], {
     required_error: "Изберете категория",
   }),
-  target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000, "Максимална сума: 1 000 000 €"),
+  target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000, "Максимална сума: 1 000 000 €").optional(),
   deadline: z.string().optional(),
+  isRecurring: z.boolean(),
 });
 
 const CreateCampaign = () => {
