@@ -1,0 +1,1 @@
+UPDATE profiles SET is_organization = true, organization_verified = true, organization_name = 'Тестова Организация' WHERE id = 'f98ae767-6dbe-44ba-bab8-c7fbd680354e';
