@@ -86,6 +86,11 @@ const AdminUsers = () => {
                 </div>
 
                 <div className="flex gap-2">
+                  {!profile.is_organization && (
+                    <Button size="sm" variant="outline" onClick={() => markAsOrganization(profile.id)}>
+                      <Building2 className="mr-1 h-3 w-3" /> Направи организация
+                    </Button>
+                  )}
                   {profile.is_organization && !profile.organization_verified && (
                     <Button size="sm" onClick={() => verifyOrganization(profile.id)}>
                       Верифицирай
