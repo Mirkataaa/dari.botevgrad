@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ImageIcon, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, Calendar, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import CampaignProgress from "@/components/campaigns/CampaignProgress";
 import CampaignComments from "@/components/campaigns/CampaignComments";
 import CampaignUpdates from "@/components/campaigns/CampaignUpdates";
+import CampaignImageGallery from "@/components/campaigns/CampaignImageGallery";
+import CampaignDocuments from "@/components/campaigns/CampaignDocuments";
 import DonateButton from "@/components/campaigns/DonateButton";
 import ShareWidget from "@/components/campaigns/ShareWidget";
 import { useCampaign, useDonations } from "@/hooks/useCampaigns";
