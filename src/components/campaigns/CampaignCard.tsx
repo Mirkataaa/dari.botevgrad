@@ -82,7 +82,15 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
           {short_description || ""}
         </p>
 
-        <CampaignProgress collected={Number(current_amount)} target={Number(target_amount)} size="sm" />
+        {!isRecurring && (
+          <CampaignProgress collected={Number(current_amount)} target={Number(target_amount)} size="sm" />
+        )}
+        {isRecurring && (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span>Периодична кампания · {Number(current_amount)} € събрани</span>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 pt-1">
           <Button asChild className="flex-1" size="sm" disabled={isClosed}>
