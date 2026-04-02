@@ -163,6 +163,7 @@ const AdminCampaignPreview = () => {
 
           <CampaignVersionHistory campaignId={campaign.id} />
         </div>
+      </div>
     </div>
   );
 };
