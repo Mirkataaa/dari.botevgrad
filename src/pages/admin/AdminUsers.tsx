@@ -45,6 +45,20 @@ const AdminUsers = () => {
     }
   };
 
+  const markAsOrganization = async (userId: string) => {
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_organization: true })
+      .eq("id", userId);
+
+    if (error) {
+      toast({ variant: "destructive", title: "Грешка", description: error.message });
+    } else {
+      toast({ title: "Потребителят е маркиран като организация" });
+      fetchData();
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
