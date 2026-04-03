@@ -18,6 +18,8 @@ import { useCampaign, useDonations } from "@/hooks/useCampaigns";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useMySubscriptionForCampaign } from "@/hooks/useMySubscription";
 import { useCancelSubscription } from "@/hooks/useSubscriptions";
+import { markRejectionsAsSeen } from "@/hooks/useNotifications";
+import { useQueryClient } from "@tanstack/react-query";
 
 const categoryMap: Record<string, string> = {
   social: "Социални",
