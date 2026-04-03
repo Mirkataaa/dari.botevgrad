@@ -85,7 +85,7 @@ const Profile = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("campaigns")
-        .select("id, title, status, current_amount, target_amount, images")
+        .select("id, title, status, current_amount, target_amount, images, campaign_type")
         .eq("created_by", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -93,6 +93,23 @@ const Profile = () => {
     },
     enabled: !!user && !!canSeeOwnCampaigns,
   });
+
+  // Fetch pending drafts for own campaigns
+  const { data: myPendingDrafts = [] } = useQuery({
+    queryKey: ["my-pending-drafts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaign_drafts")
+        .select("campaign_id")
+        .eq("submitted_by", user!.id)
+        .eq("status", "pending_review");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!canSeeOwnCampaigns,
+  });
+
+  const pendingDraftCampaignIds = new Set(myPendingDrafts.map((d: any) => d.campaign_id));
 
   useEffect(() => {
     if (profile) {
