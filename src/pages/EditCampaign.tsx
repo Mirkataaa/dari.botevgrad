@@ -259,7 +259,7 @@ const EditCampaign = () => {
           short_description: parsed.data.short_description,
           description: parsed.data.description,
           category: parsed.data.category,
-          target_amount: parsed.data.target_amount,
+          target_amount: parsed.data.target_amount ?? campaign.target_amount,
           deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
           images: allImageUrls,
           documents: allDocUrls,
