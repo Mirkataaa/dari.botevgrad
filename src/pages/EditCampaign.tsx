@@ -206,10 +206,12 @@ const EditCampaign = () => {
     e.preventDefault();
     setErrors({});
 
-    const parsed = campaignSchema.safeParse({
+    const isRecurring = campaign.campaign_type === "recurring";
+    const schema = isRecurring ? campaignSchemaRecurring : campaignSchemaOneTime;
+    const parsed = schema.safeParse({
       title, short_description: shortDesc, description,
       category: category || undefined,
-      target_amount: Number(targetAmount),
+      target_amount: isRecurring ? (targetAmount ? Number(targetAmount) : undefined) : Number(targetAmount),
       deadline: deadline || undefined,
     });
 

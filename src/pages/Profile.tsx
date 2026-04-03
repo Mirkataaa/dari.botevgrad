@@ -15,6 +15,7 @@ import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, Ale
 import { useMySubscriptions, useCancelSubscription } from "@/hooks/useSubscriptions";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate, Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const statusLabels: Record<string, string> = {
