@@ -15,6 +15,7 @@ import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, Ale
 import { useMySubscriptions, useCancelSubscription } from "@/hooks/useSubscriptions";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate, Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const statusLabels: Record<string, string> = {
@@ -85,7 +86,7 @@ const Profile = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("campaigns")
-        .select("id, title, status, current_amount, target_amount, images")
+        .select("id, title, status, current_amount, target_amount, images, campaign_type")
         .eq("created_by", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -93,6 +94,23 @@ const Profile = () => {
     },
     enabled: !!user && !!canSeeOwnCampaigns,
   });
+
+  // Fetch pending drafts for own campaigns
+  const { data: myPendingDrafts = [] } = useQuery({
+    queryKey: ["my-pending-drafts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("campaign_drafts")
+        .select("campaign_id")
+        .eq("submitted_by", user!.id)
+        .eq("status", "pending_review");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!canSeeOwnCampaigns,
+  });
+
+  const pendingDraftCampaignIds = new Set(myPendingDrafts.map((d: any) => d.campaign_id));
 
   useEffect(() => {
     if (profile) {
@@ -307,9 +325,12 @@ const Profile = () => {
           ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {myCampaigns.map((c: any) => {
-                const pct = c.target_amount > 0 ? Math.min((Number(c.current_amount) / Number(c.target_amount)) * 100, 100) : 0;
+                const isRecurring = c.campaign_type === "recurring";
+                const pct = !isRecurring && c.target_amount > 0 ? Math.min((Number(c.current_amount) / Number(c.target_amount)) * 100, 100) : 0;
+                const isRejected = notifications?.rejectedCampaignIds?.includes(c.id);
+                const hasPendingDraft = pendingDraftCampaignIds.has(c.id);
                 return (
-                  <Card key={c.id} className="overflow-hidden">
+                  <Card key={c.id} className={cn("overflow-hidden transition-colors", isRejected && "ring-2 ring-destructive")}>
                     <div className="aspect-video bg-secondary">
                       {c.images?.[0] ? (
                         <img src={c.images[0]} alt={c.title} className="h-full w-full object-cover" />
@@ -322,17 +343,28 @@ const Profile = () => {
                     <CardContent className="space-y-3 p-4">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-heading font-semibold line-clamp-2">{c.title}</h3>
-                        <Badge className={statusColors[c.status] || "bg-muted text-muted-foreground"}>
-                          {statusLabels[c.status] || c.status}
-                        </Badge>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>{Number(c.current_amount)} €</span>
-                          <span>{Number(c.target_amount)} €</span>
+                        <div className="flex flex-col items-end gap-1">
+                          <Badge className={statusColors[c.status] || "bg-muted text-muted-foreground"}>
+                            {statusLabels[c.status] || c.status}
+                          </Badge>
+                          {hasPendingDraft && (
+                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-[10px]">
+                              Чакаща редакция
+                            </Badge>
+                          )}
                         </div>
-                        <Progress value={pct} className="h-2" />
                       </div>
+                      {isRecurring ? (
+                        <p className="text-xs text-muted-foreground">Събрани: {Number(c.current_amount)} €</p>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>{Number(c.current_amount)} €</span>
+                            <span>{Number(c.target_amount)} €</span>
+                          </div>
+                          <Progress value={pct} className="h-2" />
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button asChild variant="outline" size="sm" className="flex-1 gap-1">
                           <Link to={`/campaign/${c.id}`}>

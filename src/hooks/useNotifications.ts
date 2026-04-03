@@ -81,8 +81,8 @@ export const useNotifications = () => {
         };
       }
 
-      // For creators: only unseen rejections for own campaigns
-      const [rejectedCampaignsRes, rejectedDraftsRes] = await Promise.all([
+      // For creators: unseen rejections + pending drafts
+      const [rejectedCampaignsRes, ownCampaignsRes, pendingDraftsRes] = await Promise.all([
         supabase
           .from("campaign_rejections")
           .select("campaign_id")
@@ -91,21 +91,27 @@ export const useNotifications = () => {
           .from("campaigns")
           .select("id")
           .eq("created_by", user.id),
+        supabase
+          .from("campaign_drafts")
+          .select("id", { count: "exact", head: true })
+          .eq("submitted_by", user.id)
+          .eq("status", "pending_review"),
       ]);
 
-      const ownCampaignIds = new Set((rejectedDraftsRes.data || []).map((c: any) => c.id));
+      const ownCampaignIds = new Set((ownCampaignsRes.data || []).map((c: any) => c.id));
       const unseenRejections = (rejectedCampaignsRes.data || []).filter(
         (r: any) => ownCampaignIds.has(r.campaign_id)
       );
       const uniqueCampaignIds = [...new Set(unseenRejections.map((r: any) => r.campaign_id))];
+      const creatorPendingDrafts = pendingDraftsRes.count || 0;
 
       return {
         pendingCampaigns: 0,
-        pendingDrafts: 0,
+        pendingDrafts: creatorPendingDrafts,
         contactMessages: 0,
         rejectedItems: uniqueCampaignIds.length,
         rejectedCampaignIds: uniqueCampaignIds,
-        total: uniqueCampaignIds.length,
+        total: uniqueCampaignIds.length + creatorPendingDrafts,
       };
     },
     enabled: !!user,

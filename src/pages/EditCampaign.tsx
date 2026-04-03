@@ -28,12 +28,21 @@ const categories: { value: CampaignCategory; label: string }[] = [
   { value: "infrastructure", label: "Инфраструктура и благоустройство" },
 ];
 
-const campaignSchema = z.object({
+const campaignSchemaOneTime = z.object({
   title: z.string().trim().min(5, "Заглавието трябва да е поне 5 символа").max(200),
   short_description: z.string().trim().min(10, "Краткото описание трябва да е поне 10 символа").max(300),
   description: z.string().trim().min(30, "Описанието трябва да е поне 30 символа").max(10000),
   category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"]),
   target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000),
+  deadline: z.string().optional(),
+});
+
+const campaignSchemaRecurring = z.object({
+  title: z.string().trim().min(5, "Заглавието трябва да е поне 5 символа").max(200),
+  short_description: z.string().trim().min(10, "Краткото описание трябва да е поне 10 символа").max(300),
+  description: z.string().trim().min(30, "Описанието трябва да е поне 30 символа").max(10000),
+  category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"]),
+  target_amount: z.number().optional(),
   deadline: z.string().optional(),
 });
 
@@ -197,10 +206,12 @@ const EditCampaign = () => {
     e.preventDefault();
     setErrors({});
 
-    const parsed = campaignSchema.safeParse({
+    const isRecurring = campaign.campaign_type === "recurring";
+    const schema = isRecurring ? campaignSchemaRecurring : campaignSchemaOneTime;
+    const parsed = schema.safeParse({
       title, short_description: shortDesc, description,
       category: category || undefined,
-      target_amount: Number(targetAmount),
+      target_amount: isRecurring ? (targetAmount ? Number(targetAmount) : undefined) : Number(targetAmount),
       deadline: deadline || undefined,
     });
 
@@ -229,7 +240,7 @@ const EditCampaign = () => {
           short_description: parsed.data.short_description,
           description: parsed.data.description,
           category: parsed.data.category,
-          target_amount: parsed.data.target_amount,
+          target_amount: parsed.data.target_amount ?? campaign.target_amount,
           deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
           images: allImageUrls,
           documents: allDocUrls,
@@ -248,7 +259,7 @@ const EditCampaign = () => {
           short_description: parsed.data.short_description,
           description: parsed.data.description,
           category: parsed.data.category,
-          target_amount: parsed.data.target_amount,
+          target_amount: parsed.data.target_amount ?? campaign.target_amount,
           deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
           images: allImageUrls,
           documents: allDocUrls,
@@ -328,11 +339,13 @@ const EditCampaign = () => {
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="target">Целева сума (€) *</Label>
-              <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} />
-              {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
-            </div>
+            {campaign.campaign_type !== "recurring" && (
+              <div className="space-y-2">
+                <Label htmlFor="target">Целева сума (€) *</Label>
+                <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} />
+                {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="deadline">Краен срок (по избор)</Label>
