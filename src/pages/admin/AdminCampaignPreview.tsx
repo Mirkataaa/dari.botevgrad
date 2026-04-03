@@ -133,7 +133,18 @@ const AdminCampaignPreview = () => {
         <div className="space-y-6">
           <Card>
             <CardContent className="space-y-4 p-6">
-              <CampaignProgress collected={Number(campaign.current_amount)} target={Number(campaign.target_amount)} size="lg" />
+              {campaign.campaign_type === "recurring" ? (
+                <div className="text-center space-y-1">
+                  <p className="text-2xl font-bold text-primary">{Number(campaign.current_amount)} €</p>
+                  <p className="text-sm text-muted-foreground">Събрани до момента</p>
+                </div>
+              ) : Number(campaign.target_amount) > 0 ? (
+                <CampaignProgress collected={Number(campaign.current_amount)} target={Number(campaign.target_amount)} size="lg" />
+              ) : (
+                <div className="text-center space-y-1">
+                  <p className="text-sm text-muted-foreground">Целева сума: {Number(campaign.target_amount).toLocaleString("bg-BG")} €</p>
+                </div>
+              )}
 
               <Separator />
 
