@@ -201,9 +201,9 @@ const CampaignComments = ({ campaignId }: Props) => {
           {sortedComments.map((c: any) => (
             <div key={c.id} className="flex gap-3 rounded-lg border p-4">
               <Avatar className="h-8 w-8 shrink-0">
-                {c.profiles?.avatar_url && <AvatarImage src={c.profiles.avatar_url} />}
+                {c.profiles?.avatar_url ? <AvatarImage src={c.profiles.avatar_url} /> : null}
                 <AvatarFallback className="text-xs">
-                  {(c.profiles?.full_name || "?")[0].toUpperCase()}
+                  {(c.profiles?.full_name?.[0] || "П").toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 space-y-1">
