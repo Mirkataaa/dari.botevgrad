@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Tag, Pencil, RefreshCw, XCircle, Loader2, Clock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
