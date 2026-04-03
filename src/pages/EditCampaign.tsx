@@ -339,11 +339,13 @@ const EditCampaign = () => {
               {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="target">Целева сума (€) *</Label>
-              <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} />
-              {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
-            </div>
+            {campaign.campaign_type !== "recurring" && (
+              <div className="space-y-2">
+                <Label htmlFor="target">Целева сума (€) *</Label>
+                <Input id="target" type="number" min={100} max={1000000} value={targetAmount} onChange={e => setTargetAmount(e.target.value)} />
+                {errors.target_amount && <p className="text-sm text-destructive">{errors.target_amount}</p>}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="deadline">Краен срок (по избор)</Label>
