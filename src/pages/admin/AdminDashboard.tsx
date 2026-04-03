@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Megaphone, HandCoins, Users, TrendingUp, AlertCircle } from "lucide-react";
+import { Megaphone, HandCoins, Users, AlertCircle, Mail, FileEdit } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({
@@ -9,6 +10,7 @@ const AdminDashboard = () => {
     activeCampaigns: 0,
     pendingCampaigns: 0,
     pendingDrafts: 0,
+    unreadMessages: 0,
     totalDonations: 0,
     totalAmount: 0,
     totalUsers: 0,
@@ -17,11 +19,12 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const [campaignsRes, donationsRes, profilesRes, draftsRes] = await Promise.all([
+      const [campaignsRes, donationsRes, profilesRes, draftsRes, messagesRes] = await Promise.all([
         supabase.from("campaigns").select("id, status"),
         supabase.from("donations").select("amount, status"),
         supabase.from("profiles").select("id"),
         supabase.from("campaign_drafts").select("id", { count: "exact", head: true }).eq("status", "pending_review"),
+        supabase.from("contact_messages").select("id", { count: "exact", head: true }).eq("is_read", false),
       ]);
 
       const campaigns = campaignsRes.data || [];
@@ -33,6 +36,7 @@ const AdminDashboard = () => {
         activeCampaigns: campaigns.filter((c: any) => c.status === "active").length,
         pendingCampaigns: campaigns.filter((c: any) => c.status === "pending").length,
         pendingDrafts: draftsRes.count || 0,
+        unreadMessages: messagesRes.count || 0,
         totalDonations: donations.length,
         totalAmount: donations.reduce((sum: number, d: any) => sum + Number(d.amount), 0),
         totalUsers: profiles.length,
@@ -43,11 +47,11 @@ const AdminDashboard = () => {
     fetchStats();
   }, []);
 
-  const totalPending = stats.pendingCampaigns + stats.pendingDrafts;
-
   const statCards = [
     { label: "Активни кампании", value: stats.activeCampaigns, icon: Megaphone, color: "text-primary" },
-    { label: "Чакащи одобрение", value: totalPending, icon: AlertCircle, color: "text-amber-500" },
+    { label: "Съобщения", value: stats.unreadMessages, icon: Mail, color: "text-blue-500" },
+    { label: "Чакащи одобрение", value: stats.pendingCampaigns, icon: AlertCircle, color: "text-amber-500" },
+    { label: "Чакащи редакции", value: stats.pendingDrafts, icon: FileEdit, color: "text-orange-500" },
     { label: "Общо дарения", value: `${stats.totalAmount.toLocaleString("bg-BG")} €`, icon: HandCoins, color: "text-emerald-600" },
     { label: "Регистрирани потребители", value: stats.totalUsers, icon: Users, color: "text-blue-500" },
   ];
@@ -64,7 +68,7 @@ const AdminDashboard = () => {
     <div>
       <h1 className="mb-6 font-heading text-2xl font-bold">Табло</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map((stat) => (
           <Card key={stat.label}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -81,5 +85,4 @@ const AdminDashboard = () => {
   );
 };
 
-import { cn } from "@/lib/utils";
 export default AdminDashboard;

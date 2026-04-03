@@ -8,7 +8,7 @@ interface CampaignProgressProps {
 }
 
 const CampaignProgress = ({ collected, target, size = "md", showLabels = true }: CampaignProgressProps) => {
-  const percentage = Math.min((collected / target) * 100, 100);
+  const percentage = target > 0 ? Math.min((collected / target) * 100, 100) : 0;
 
   const heightClass = {
     sm: "h-2",
