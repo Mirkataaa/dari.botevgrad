@@ -41,8 +41,18 @@ const CampaignDetails = () => {
   const { data: mySubscription, isLoading: subLoading } = useMySubscriptionForCampaign(isRecurring ? id : undefined);
   const cancelMutation = useCancelSubscription();
 
+  const queryClient = useQueryClient();
+
   useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"], ["donations", id || ""]]);
 
+  // Mark rejections as seen when creator views their own campaign
+  useEffect(() => {
+    if (user && campaign && campaign.created_by === user.id && id) {
+      markRejectionsAsSeen(id).then(() => {
+        queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      });
+    }
+  }, [user, campaign, id, queryClient]);
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
