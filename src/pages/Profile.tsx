@@ -401,6 +401,24 @@ const Profile = () => {
         </>
       )}
 
+      {/* Revisions section */}
+      {canSeeOwnCampaigns && (
+        <>
+          <Separator className="my-8" />
+          <div ref={revisionsRef}>
+            <h2 className="flex items-center gap-2 font-heading text-xl font-bold mb-4">
+              <FileEdit className="h-5 w-5" /> Редакции / Одобрения
+              {((notifications?.rejectedItems || 0) + (notifications?.pendingDrafts || 0)) > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {(notifications?.rejectedItems || 0) + (notifications?.pendingDrafts || 0)}
+                </Badge>
+              )}
+            </h2>
+            <ProfileRevisions highlightCampaignId={highlightCampaignId} />
+          </div>
+        </>
+      )}
+
       <Separator className="my-8" />
       <SubscriptionsSection />
 
