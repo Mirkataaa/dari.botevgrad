@@ -11,12 +11,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle } from "lucide-react";
+import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle, FileEdit } from "lucide-react";
 import { useMySubscriptions, useCancelSubscription } from "@/hooks/useSubscriptions";
 import { useToast } from "@/hooks/use-toast";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import ProfileRevisions from "@/components/profile/ProfileRevisions";
 
 const statusLabels: Record<string, string> = {
   active: "Активна",
@@ -40,6 +41,10 @@ const Profile = () => {
   const queryClient = useQueryClient();
   const { isAdmin } = useIsAdmin();
   const { data: notifications } = useNotifications();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const tabParam = searchParams.get("tab");
+  const highlightCampaignId = searchParams.get("highlight");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -50,6 +55,7 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
+  const revisionsRef = useRef<HTMLDivElement>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
@@ -128,6 +134,15 @@ const Profile = () => {
       });
     }
   }, [notifications?.rejectedCampaignIds, queryClient]);
+
+  // Scroll to revisions section when navigated via notification
+  useEffect(() => {
+    if (tabParam === "revisions" && revisionsRef.current) {
+      setTimeout(() => {
+        revisionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    }
+  }, [tabParam]);
 
   if (authLoading) {
     return (
@@ -383,6 +398,24 @@ const Profile = () => {
               })}
             </div>
           )}
+        </>
+      )}
+
+      {/* Revisions section */}
+      {canSeeOwnCampaigns && (
+        <>
+          <Separator className="my-8" />
+          <div ref={revisionsRef}>
+            <h2 className="flex items-center gap-2 font-heading text-xl font-bold mb-4">
+              <FileEdit className="h-5 w-5" /> Редакции / Одобрения
+              {((notifications?.rejectedItems || 0) + (notifications?.pendingDrafts || 0)) > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {(notifications?.rejectedItems || 0) + (notifications?.pendingDrafts || 0)}
+                </Badge>
+              )}
+            </h2>
+            <ProfileRevisions highlightCampaignId={highlightCampaignId} />
+          </div>
         </>
       )}
 
