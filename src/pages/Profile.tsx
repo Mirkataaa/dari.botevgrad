@@ -41,6 +41,10 @@ const Profile = () => {
   const queryClient = useQueryClient();
   const { isAdmin } = useIsAdmin();
   const { data: notifications } = useNotifications();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const tabParam = searchParams.get("tab");
+  const highlightCampaignId = searchParams.get("highlight");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -51,6 +55,7 @@ const Profile = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
+  const revisionsRef = useRef<HTMLDivElement>(null);
 
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
