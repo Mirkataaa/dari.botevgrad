@@ -27,6 +27,7 @@ export type Database = {
           main_image_index: number
           reviewed_at: string | null
           reviewed_by: string | null
+          seen_at: string | null
           short_description: string | null
           status: string
           submitted_by: string
@@ -46,6 +47,7 @@ export type Database = {
           main_image_index?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
+          seen_at?: string | null
           short_description?: string | null
           status?: string
           submitted_by: string
@@ -65,6 +67,7 @@ export type Database = {
           main_image_index?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
+          seen_at?: string | null
           short_description?: string | null
           status?: string
           submitted_by?: string
@@ -740,6 +743,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      mark_review_notifications_seen: {
+        Args: { _campaign_id?: string }
+        Returns: undefined
       }
       move_to_dlq: {
         Args: {
