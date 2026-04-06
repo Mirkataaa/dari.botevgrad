@@ -11,12 +11,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle } from "lucide-react";
+import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle, FileEdit } from "lucide-react";
 import { useMySubscriptions, useCancelSubscription } from "@/hooks/useSubscriptions";
 import { useToast } from "@/hooks/use-toast";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import ProfileRevisions from "@/components/profile/ProfileRevisions";
 
 const statusLabels: Record<string, string> = {
   active: "Активна",

@@ -16,11 +16,10 @@ const NotificationBell = () => {
   const handleClick = () => {
     if (isAdmin) {
       navigate("/admin");
-    } else if (data?.rejectedCampaignIds?.length === 1) {
-      // Single rejected campaign → go directly to it
-      navigate(`/campaign/${data.rejectedCampaignIds[0]}`);
     } else {
-      navigate("/profile");
+      // Navigate to profile revisions section
+      const highlightId = data?.rejectedCampaignIds?.length === 1 ? data.rejectedCampaignIds[0] : undefined;
+      navigate("/profile?tab=revisions" + (highlightId ? `&highlight=${highlightId}` : ""));
     }
   };
 
