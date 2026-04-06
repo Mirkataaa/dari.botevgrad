@@ -8,6 +8,7 @@ export interface NotificationCounts {
   pendingCampaigns: number;
   pendingDrafts: number;
   contactMessages: number;
+  approvedItems: number;
   rejectedItems: number;
   rejectedCampaignIds: string[];
   total: number;
@@ -17,6 +18,7 @@ const EMPTY: NotificationCounts = {
   pendingCampaigns: 0,
   pendingDrafts: 0,
   contactMessages: 0,
+  approvedItems: 0,
   rejectedItems: 0,
   rejectedCampaignIds: [],
   total: 0,
@@ -75,43 +77,59 @@ export const useNotifications = () => {
           pendingCampaigns,
           pendingDrafts,
           contactMessages,
+          approvedItems: 0,
           rejectedItems: 0,
           rejectedCampaignIds: [],
           total: pendingCampaigns + pendingDrafts + contactMessages,
         };
       }
 
-      // For creators: unseen rejections + pending drafts
-      const [rejectedCampaignsRes, ownCampaignsRes, pendingDraftsRes] = await Promise.all([
+      // For creators: notifications only for reviewed outcomes, never for newly submitted items.
+      const [reviewedDraftsRes, rejectedCampaignsRes, ownCampaignsRes] = await Promise.all([
+        supabase
+          .from("campaign_drafts")
+          .select("id, campaign_id, status, seen_at")
+          .eq("submitted_by", user.id)
+          .in("status", ["approved", "rejected"])
+          .not("reviewed_at", "is", null)
+          .is("seen_at", null),
         supabase
           .from("campaign_rejections")
-          .select("campaign_id")
+          .select("campaign_id, draft_id")
           .is("seen_at", null),
         supabase
           .from("campaigns")
           .select("id")
           .eq("created_by", user.id),
-        supabase
-          .from("campaign_drafts")
-          .select("id", { count: "exact", head: true })
-          .eq("submitted_by", user.id)
-          .eq("status", "pending_review"),
       ]);
 
       const ownCampaignIds = new Set((ownCampaignsRes.data || []).map((c: any) => c.id));
-      const unseenRejections = (rejectedCampaignsRes.data || []).filter(
-        (r: any) => ownCampaignIds.has(r.campaign_id)
+      const reviewedDrafts = (reviewedDraftsRes.data || []).filter((draft: any) =>
+        ownCampaignIds.has(draft.campaign_id)
       );
-      const uniqueCampaignIds = [...new Set(unseenRejections.map((r: any) => r.campaign_id))];
-      const creatorPendingDrafts = pendingDraftsRes.count || 0;
+
+      const unseenStandaloneRejections = (rejectedCampaignsRes.data || []).filter(
+        (rejection: any) => ownCampaignIds.has(rejection.campaign_id) && !rejection.draft_id
+      );
+
+      const approvedItems = reviewedDrafts.filter((draft: any) => draft.status === "approved").length;
+      const rejectedDrafts = reviewedDrafts.filter((draft: any) => draft.status === "rejected");
+      const rejectedItems = rejectedDrafts.length + unseenStandaloneRejections.length;
+      const uniqueCampaignIds = [
+        ...new Set([
+          ...rejectedDrafts.map((draft: any) => draft.campaign_id),
+          ...unseenStandaloneRejections.map((rejection: any) => rejection.campaign_id),
+        ]),
+      ];
 
       return {
         pendingCampaigns: 0,
-        pendingDrafts: creatorPendingDrafts,
+        pendingDrafts: 0,
         contactMessages: 0,
-        rejectedItems: uniqueCampaignIds.length,
+        approvedItems,
+        rejectedItems,
         rejectedCampaignIds: uniqueCampaignIds,
-        total: uniqueCampaignIds.length + creatorPendingDrafts,
+        total: approvedItems + rejectedItems,
       };
     },
     enabled: !!user,
@@ -119,21 +137,10 @@ export const useNotifications = () => {
   });
 };
 
-/** Mark all unseen rejections for a campaign as seen */
-export const markRejectionsAsSeen = async (campaignId: string) => {
-  await supabase
-    .from("campaign_rejections")
-    .update({ seen_at: new Date().toISOString() })
-    .eq("campaign_id", campaignId)
-    .is("seen_at", null);
-};
+export const markReviewNotificationsAsSeen = async (campaignId?: string) => {
+  const { error } = await supabase.rpc("mark_review_notifications_seen", {
+    _campaign_id: campaignId ?? null,
+  });
 
-/** Mark all unseen rejections for the current user as seen */
-export const markAllRejectionsAsSeen = async (campaignIds: string[]) => {
-  if (campaignIds.length === 0) return;
-  await supabase
-    .from("campaign_rejections")
-    .update({ seen_at: new Date().toISOString() })
-    .in("campaign_id", campaignIds)
-    .is("seen_at", null);
+  if (error) throw error;
 };

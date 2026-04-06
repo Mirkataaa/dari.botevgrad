@@ -18,7 +18,7 @@ import { useCampaign, useDonations } from "@/hooks/useCampaigns";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { useMySubscriptionForCampaign } from "@/hooks/useMySubscription";
 import { useCancelSubscription } from "@/hooks/useSubscriptions";
-import { markRejectionsAsSeen } from "@/hooks/useNotifications";
+import { markReviewNotificationsAsSeen } from "@/hooks/useNotifications";
 import { useQueryClient } from "@tanstack/react-query";
 
 const categoryMap: Record<string, string> = {
@@ -42,13 +42,16 @@ const CampaignDetails = () => {
   const cancelMutation = useCancelSubscription();
 
   const queryClient = useQueryClient();
+  const recurringTotal = donations.reduce((sum, donation) => sum + Number(donation.amount), 0);
 
   useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"], ["donations", id || ""]]);
+  useRealtimeSync("donations", [["campaign", id || ""], ["donations", id || ""], ["my-donations", user?.id || ""]]);
+  useRealtimeSync("subscriptions", [["my-campaign-subscription", id || "", user?.id || ""], ["my-subscriptions", user?.id || ""]]);
 
   // Mark rejections as seen when creator views their own campaign
   useEffect(() => {
     if (user && campaign && campaign.created_by === user.id && id) {
-      markRejectionsAsSeen(id).then(() => {
+      markReviewNotificationsAsSeen(id).then(() => {
         queryClient.invalidateQueries({ queryKey: ["notifications"] });
       });
     }
@@ -133,7 +136,7 @@ const CampaignDetails = () => {
               )}
               {isRecurring && (
                 <div className="text-center space-y-1">
-                  <p className="text-2xl font-bold text-primary">{Number(campaign.current_amount)} €</p>
+                  <p className="text-2xl font-bold text-primary">{recurringTotal} €</p>
                   <p className="text-sm text-muted-foreground">Събрани до момента</p>
                 </div>
               )}
@@ -160,7 +163,7 @@ const CampaignDetails = () => {
                     <Button
                       variant="outline"
                       className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => cancelMutation.mutate(mySubscription.stripe_subscription_id)}
+                      onClick={() => cancelMutation.mutate(mySubscription.id)}
                       disabled={cancelMutation.isPending}
                     >
                       {cancelMutation.isPending ? (

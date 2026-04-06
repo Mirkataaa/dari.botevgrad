@@ -17,6 +17,7 @@ interface Draft {
   created_at: string;
   title: string;
   reviewed_at: string | null;
+  seen_at?: string | null;
 }
 
 interface Rejection {
@@ -41,7 +42,7 @@ const draftStatusLabels: Record<string, string> = {
 };
 
 const draftStatusColors: Record<string, string> = {
-  pending_review: "border-amber-300 bg-amber-50 text-amber-700",
+  pending_review: "border-border bg-secondary text-secondary-foreground",
   approved: "border-primary/30 bg-primary/10 text-primary",
   rejected: "border-destructive/30 bg-destructive/10 text-destructive",
 };
@@ -58,7 +59,7 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
     queryFn: async () => {
       const { data, error } = await supabase
         .from("campaign_drafts")
-        .select("id, campaign_id, status, created_at, title, reviewed_at")
+        .select("id, campaign_id, status, created_at, title, reviewed_at, seen_at")
         .eq("submitted_by", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -192,7 +193,7 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {hasPending && (
-                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-[10px]">
+                    <Badge variant="secondary" className="text-[10px]">
                       <Clock className="mr-1 h-3 w-3" />Чакаща
                     </Badge>
                   )}
@@ -234,20 +235,48 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
                   {/* Timeline of drafts & rejections merged and sorted by date */}
                   <div className="space-y-2">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">История</h4>
-                    {(() => {
-                      type TimelineItem = { type: "draft"; item: Draft; date: string } | { type: "rejection"; item: Rejection; date: string };
-                      const timeline: TimelineItem[] = [
-                        ...cDrafts.map(d => ({ type: "draft" as const, item: d, date: d.created_at })),
-                        ...cRejections.map(r => ({ type: "rejection" as const, item: r, date: r.created_at })),
-                      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                     {(() => {
+                       const rejectionByDraftId = new Map(
+                         cRejections.filter((rejection) => rejection.draft_id).map((rejection) => [rejection.draft_id!, rejection])
+                       );
+
+                       const standaloneRejections = cRejections.filter(
+                         (rejection) => !rejection.draft_id || !cDrafts.some((draft) => draft.id === rejection.draft_id)
+                       );
+
+                       type TimelineItem =
+                         | { type: "revision"; draft: Draft; rejection?: Rejection; date: string }
+                         | { type: "rejection"; rejection: Rejection; date: string };
+
+                       const timeline: TimelineItem[] = [
+                         ...cDrafts.map((draft) => ({
+                           type: "revision" as const,
+                           draft,
+                           rejection: rejectionByDraftId.get(draft.id),
+                           date: draft.reviewed_at || draft.created_at,
+                         })),
+                         ...standaloneRejections.map((rejection) => ({
+                           type: "rejection" as const,
+                           rejection,
+                           date: rejection.created_at,
+                         })),
+                       ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
                       if (timeline.length === 0) {
                         return <p className="text-sm text-muted-foreground">Няма записи.</p>;
                       }
 
-                      return timeline.map((entry, idx) => {
-                        if (entry.type === "draft") {
-                          const d = entry.item;
+                       return timeline.map((entry) => {
+                         if (entry.type === "revision") {
+                           const d = entry.draft;
+                           const rejection = entry.rejection;
+                           const eventDate = rejection?.created_at || d.reviewed_at || d.created_at;
+                           const title = d.status === "approved"
+                             ? "Одобрена"
+                             : d.status === "rejected"
+                               ? "Отхвърлена"
+                               : "Чакаща";
+
                           return (
                             <div key={`d-${d.id}`} className="flex items-start gap-3 rounded-lg border p-3">
                               <div className="mt-0.5">
@@ -261,19 +290,24 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">Редакция</span>
+                                   <span className="text-sm font-medium">{title}</span>
                                   <Badge variant="outline" className={cn("text-[10px]", draftStatusColors[d.status])}>
                                     {draftStatusLabels[d.status] || d.status}
                                   </Badge>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                  {new Date(d.created_at).toLocaleDateString("bg-BG")} в {new Date(d.created_at).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}
+                                   {new Date(eventDate).toLocaleDateString("bg-BG")} в {new Date(eventDate).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}
                                 </p>
+                                 {d.status === "rejected" && rejection?.reason && (
+                                   <p className="mt-2 text-sm text-foreground">
+                                     <span className="font-medium">Причина:</span> {rejection.reason}
+                                   </p>
+                                 )}
                               </div>
                             </div>
                           );
                         } else {
-                          const r = entry.item;
+                           const r = entry.rejection;
                           return (
                             <div key={`r-${r.id}`} className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-1">
                               <div className="flex items-center gap-2">

@@ -18,6 +18,12 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
+  const serviceClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+    { auth: { persistSession: false } }
+  );
+
   try {
     const { campaignId, amount, interval = "month" } = await req.json();
     console.log("[create-subscription] Request:", { campaignId, amount, interval });
@@ -40,7 +46,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("Трябва да сте влезли в профила си за абонамент");
 
     // Verify campaign is recurring and active
-    const { data: campaign, error: campErr } = await supabaseClient
+    const { data: campaign, error: campErr } = await serviceClient
       .from("campaigns")
       .select("title, status, campaign_type")
       .eq("id", campaignId)
@@ -49,6 +55,18 @@ serve(async (req) => {
     if (campErr || !campaign) throw new Error("Campaign not found");
     if (campaign.status !== "active") throw new Error("Campaign is not active");
     if ((campaign as any).campaign_type !== "recurring") throw new Error("Campaign does not support subscriptions");
+
+    const { data: existingSubscription } = await serviceClient
+      .from("subscriptions")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .eq("donor_id", user.id)
+      .in("status", ["active", "cancelling"])
+      .maybeSingle();
+
+    if (existingSubscription) {
+      throw new Error("Вече имате активен абонамент за тази кампания");
+    }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",

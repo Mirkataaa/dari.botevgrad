@@ -66,6 +66,7 @@ export const useCancelSubscription = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["my-campaign-subscription"] });
       toast({ title: "Абонаментът е отменен", description: "Ще бъде спрян в края на текущия период." });
     },
     onError: (err: any) => {
