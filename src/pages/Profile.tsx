@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNotifications, markAllRejectionsAsSeen } from "@/hooks/useNotifications";
+import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import { Navigate, Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import ProfileRevisions from "@/components/profile/ProfileRevisions";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
 const statusLabels: Record<string, string> = {
   active: "Активна",
@@ -117,6 +118,10 @@ const Profile = () => {
   });
 
   const pendingDraftCampaignIds = new Set(myPendingDrafts.map((d: any) => d.campaign_id));
+  const reviewNotificationsCount = (notifications?.approvedItems || 0) + (notifications?.rejectedItems || 0);
+
+  useRealtimeSync("donations", [["my-donations", user?.id || ""]]);
+  useRealtimeSync("subscriptions", [["my-subscriptions", user?.id || ""]]);
 
   useEffect(() => {
     if (profile) {
@@ -125,15 +130,6 @@ const Profile = () => {
       setAvatarUrl(profile.avatar_url || "");
     }
   }, [profile]);
-
-  // Mark rejection notifications as seen when creator visits profile
-  useEffect(() => {
-    if (notifications?.rejectedCampaignIds && notifications.rejectedCampaignIds.length > 0) {
-      markAllRejectionsAsSeen(notifications.rejectedCampaignIds).then(() => {
-        queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      });
-    }
-  }, [notifications?.rejectedCampaignIds, queryClient]);
 
   // Scroll to revisions section when navigated via notification
   useEffect(() => {
@@ -408,9 +404,9 @@ const Profile = () => {
           <div ref={revisionsRef}>
             <h2 className="flex items-center gap-2 font-heading text-xl font-bold mb-4">
               <FileEdit className="h-5 w-5" /> Редакции / Одобрения
-              {((notifications?.rejectedItems || 0) + (notifications?.pendingDrafts || 0)) > 0 && (
+              {(reviewNotificationsCount + myPendingDrafts.length) > 0 && (
                 <Badge variant="destructive" className="ml-2">
-                  {(notifications?.rejectedItems || 0) + (notifications?.pendingDrafts || 0)}
+                  {reviewNotificationsCount + myPendingDrafts.length}
                 </Badge>
               )}
             </h2>
@@ -494,7 +490,7 @@ const SubscriptionsSection = () => {
                   <p className="font-medium">{Number(sub.amount)} € / {sub.interval === "month" ? "месец" : "година"}</p>
                   <p className="text-xs text-muted-foreground">
                     От {new Date(sub.created_at).toLocaleDateString("bg-BG")}
-                    {sub.current_period_end && ` · Следващо плащане: ${new Date(sub.current_period_end).toLocaleDateString("bg-BG")}`}
+                    {sub.current_period_end && ` · Следващо плащане: ${new Date(sub.current_period_end).toLocaleDateString("bg-BG")} в ${new Date(sub.current_period_end).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}`}
                   </p>
                   {sub.status === "cancelling" && (
                     <Badge variant="outline" className="text-destructive border-destructive/30">Отменен (активен до края на периода)</Badge>

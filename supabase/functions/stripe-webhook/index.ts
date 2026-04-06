@@ -8,6 +8,11 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
 
 const endpointSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET")?.trim();
 
+const toIsoOrNull = (value?: number | null) => {
+  if (!value || !Number.isFinite(value)) return null;
+  return new Date(value * 1000).toISOString();
+};
+
 serve(async (req) => {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
@@ -57,8 +62,11 @@ serve(async (req) => {
 
       // Retrieve subscription from Stripe to get current_period_end
       const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const periodEnd = new Date(stripeSubscription.current_period_end * 1000).toISOString();
+      const periodEnd = toIsoOrNull(stripeSubscription.current_period_end);
       const subInterval = stripeSubscription.items.data[0]?.price?.recurring?.interval || "month";
+      const latestInvoiceId = typeof stripeSubscription.latest_invoice === "string"
+        ? stripeSubscription.latest_invoice
+        : stripeSubscription.latest_invoice?.id || null;
 
       await supabase.from("subscriptions").upsert({
         stripe_subscription_id: subscriptionId,
@@ -77,24 +85,27 @@ serve(async (req) => {
       // Create donation record for the first subscription payment
       const firstAmount = Number(meta.amount) || (session.amount_total ? session.amount_total / 100 : 0);
       if (firstAmount > 0) {
+        const paymentReference = latestInvoiceId || `subscription:${subscriptionId}:initial`;
         const { data: firstDonation } = await supabase
           .from("donations")
-          .insert({
+          .upsert({
             campaign_id: meta.campaign_id,
             amount: firstAmount,
             donor_id: meta.donor_id || null,
             donor_name: session.customer_details?.name || null,
             is_anonymous: false,
             status: "completed",
-            stripe_payment_id: typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null,
+            stripe_payment_id: paymentReference,
           })
           .select("id, campaign_id, amount")
           .single();
 
         if (firstDonation) {
-          await updateCampaignAmount(supabase, firstDonation);
+          await updateCampaignAmount(supabase, firstDonation.campaign_id);
           console.log("[stripe-webhook] First subscription donation recorded:", firstDonation.id);
         }
+      } else if (meta.campaign_id) {
+        await updateCampaignAmount(supabase, meta.campaign_id);
       }
     }
 
@@ -125,7 +136,7 @@ serve(async (req) => {
         });
       }
 
-      await updateCampaignAmount(supabase, updatedDonation);
+      await updateCampaignAmount(supabase, updatedDonation.campaign_id);
       await sendConfirmationEmail(supabase, session, updatedDonation);
     }
   }
@@ -148,6 +159,16 @@ serve(async (req) => {
       : invoice.subscription?.id;
 
     if (subscriptionId && invoice.amount_paid > 0) {
+      const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+      await supabase
+        .from("subscriptions")
+        .update({
+          status: stripeSubscription.cancel_at_period_end ? "cancelling" : stripeSubscription.status,
+          current_period_end: toIsoOrNull(stripeSubscription.current_period_end),
+        })
+        .eq("stripe_subscription_id", subscriptionId);
+
       // Find the subscription record
       const { data: sub } = await supabase
         .from("subscriptions")
@@ -157,24 +178,27 @@ serve(async (req) => {
 
       if (sub) {
         const amount = invoice.amount_paid / 100;
+        const paymentReference = typeof invoice.payment_intent === "string"
+          ? invoice.payment_intent
+          : invoice.id;
 
         // Create a donation record for this recurring payment
         const { data: donation } = await supabase
           .from("donations")
-          .insert({
+          .upsert({
             campaign_id: sub.campaign_id,
             amount,
             donor_id: sub.donor_id,
             donor_name: null,
             is_anonymous: false,
             status: "completed",
-            stripe_payment_id: invoice.payment_intent as string || null,
-          })
+            stripe_payment_id: paymentReference,
+          }, { onConflict: "stripe_payment_id" })
           .select("id, campaign_id, amount")
           .single();
 
         if (donation) {
-          await updateCampaignAmount(supabase, donation);
+          await updateCampaignAmount(supabase, donation.campaign_id);
           console.log("[stripe-webhook] Recurring donation recorded:", donation.id);
         }
       }
@@ -196,10 +220,10 @@ serve(async (req) => {
     const subscription = event.data.object as Stripe.Subscription;
     const updates: Record<string, any> = {
       status: subscription.cancel_at_period_end ? "cancelling" : subscription.status,
-      current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      current_period_end: toIsoOrNull(subscription.current_period_end),
     };
     if (subscription.canceled_at) {
-      updates.cancelled_at = new Date(subscription.canceled_at * 1000).toISOString();
+      updates.cancelled_at = toIsoOrNull(subscription.canceled_at);
     }
     await supabase
       .from("subscriptions")
@@ -214,26 +238,24 @@ serve(async (req) => {
 });
 
 // Helper: update campaign current_amount
-async function updateCampaignAmount(supabase: any, donation: { id: string; campaign_id: string; amount: number }) {
-  const { data: campaign } = await supabase
+async function updateCampaignAmount(supabase: any, campaignId: string) {
+  const { data: donations } = await supabase
+    .from("donations")
+    .select("amount")
+    .eq("campaign_id", campaignId)
+    .eq("status", "completed");
+
+  const newTotal = (donations || []).reduce((sum: number, donation: { amount: number }) => sum + Number(donation.amount), 0);
+
+  await supabase
     .from("campaigns")
-    .select("current_amount")
-    .eq("id", donation.campaign_id)
-    .single();
+    .update({ current_amount: newTotal })
+    .eq("id", campaignId);
 
-  if (campaign) {
-    const nextAmount = Number(campaign.current_amount) + Number(donation.amount);
-    await supabase
-      .from("campaigns")
-      .update({ current_amount: nextAmount })
-      .eq("id", donation.campaign_id);
-
-    console.log("[stripe-webhook] Campaign amount updated:", {
-      campaignId: donation.campaign_id,
-      amount: donation.amount,
-      newTotal: nextAmount,
-    });
-  }
+  console.log("[stripe-webhook] Campaign amount updated:", {
+    campaignId,
+    newTotal,
+  });
 }
 
 // Helper: send donation confirmation email
