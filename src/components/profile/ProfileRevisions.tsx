@@ -42,7 +42,7 @@ const draftStatusLabels: Record<string, string> = {
 };
 
 const draftStatusColors: Record<string, string> = {
-  pending_review: "border-amber-300 bg-amber-50 text-amber-700",
+  pending_review: "border-border bg-secondary text-secondary-foreground",
   approved: "border-primary/30 bg-primary/10 text-primary",
   rejected: "border-destructive/30 bg-destructive/10 text-destructive",
 };
@@ -193,7 +193,7 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {hasPending && (
-                    <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-[10px]">
+                    <Badge variant="secondary" className="text-[10px]">
                       <Clock className="mr-1 h-3 w-3" />Чакаща
                     </Badge>
                   )}

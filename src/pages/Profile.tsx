@@ -359,7 +359,7 @@ const Profile = () => {
                             {statusLabels[c.status] || c.status}
                           </Badge>
                           {hasPendingDraft && (
-                            <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 text-[10px]">
+                            <Badge variant="secondary" className="text-[10px]">
                               Чакаща редакция
                             </Badge>
                           )}
