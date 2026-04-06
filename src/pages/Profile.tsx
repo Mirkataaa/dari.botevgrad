@@ -135,6 +135,15 @@ const Profile = () => {
     }
   }, [notifications?.rejectedCampaignIds, queryClient]);
 
+  // Scroll to revisions section when navigated via notification
+  useEffect(() => {
+    if (tabParam === "revisions" && revisionsRef.current) {
+      setTimeout(() => {
+        revisionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    }
+  }, [tabParam]);
+
   if (authLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
