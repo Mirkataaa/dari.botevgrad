@@ -42,7 +42,6 @@ const CampaignDetails = () => {
   const cancelMutation = useCancelSubscription();
 
   const queryClient = useQueryClient();
-  const recurringTotal = donations.reduce((sum, donation) => sum + Number(donation.amount), 0);
 
   useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"], ["donations", id || ""]]);
   useRealtimeSync("donations", [["campaign", id || ""], ["donations", id || ""], ["my-donations", user?.id || ""]]);
