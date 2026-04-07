@@ -135,7 +135,7 @@ const CampaignDetails = () => {
               )}
               {isRecurring && (
                 <div className="text-center space-y-1">
-                  <p className="text-2xl font-bold text-primary">{recurringTotal} €</p>
+                  <p className="text-2xl font-bold text-primary">{Number(campaign.current_amount)} €</p>
                   <p className="text-sm text-muted-foreground">Събрани до момента</p>
                 </div>
               )}
