@@ -182,32 +182,27 @@ const CampaignDetails = () => {
                 </div>
               )}
 
-              {/* Show donations list only for one-time campaigns */}
-              {!isRecurring && (
-                <>
-                  <Separator />
-                  <div>
-                    <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                      Последни дарения
-                    </h3>
-                    {donations.length === 0 ? (
-                      <p className="mt-3 text-sm text-muted-foreground">Все още няма дарения</p>
-                    ) : (
-                      <ul className="mt-3 space-y-3">
-                        {donations.slice(0, 10).map((d) => (
-                          <li key={d.id} className="flex items-start justify-between rounded-lg bg-secondary/60 p-3">
-                            <div>
-                              <p className="text-sm font-medium">{d.is_anonymous ? "Анонимен" : (d.donor_name || "Дарител")}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("bg-BG")}</p>
-                            </div>
-                            <span className="text-sm font-bold text-primary">{Number(d.amount)} €</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </>
-              )}
+              <Separator />
+              <div>
+                <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                  Дарения ({donations.length})
+                </h3>
+                {donations.length === 0 ? (
+                  <p className="mt-3 text-sm text-muted-foreground">Все още няма дарения</p>
+                ) : (
+                  <ul className="mt-3 space-y-3">
+                    {donations.slice(0, 20).map((d) => (
+                      <li key={d.id} className="flex items-start justify-between rounded-lg bg-secondary/60 p-3">
+                        <div>
+                          <p className="text-sm font-medium">{d.is_anonymous ? "Анонимен" : (d.donor_name || "Дарител")}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("bg-BG")}</p>
+                        </div>
+                        <span className="text-sm font-bold text-primary">{Number(d.amount)} €</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

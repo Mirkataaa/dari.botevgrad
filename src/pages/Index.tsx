@@ -30,7 +30,7 @@ const Index = () => {
 
   const statItems = [
     { icon: Heart, label: "Кампании", value: String(stats?.campaignCount || 0) },
-    { icon: Users, label: "Дарители", value: stats?.donorCount ? `${stats.donorCount}+` : "0" },
+    { icon: Users, label: "Дарения", value: String(stats?.donationCount || 0) },
     { icon: Target, label: "Събрани средства", value: `${(stats?.totalRaised || 0).toLocaleString("bg-BG")} €` },
   ];
 
