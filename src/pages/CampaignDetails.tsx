@@ -201,7 +201,9 @@ const CampaignDetails = () => {
                       </li>
                     ))}
                   </ul>
+                )}
               </div>
+            </CardContent>
           </Card>
         </div>
       </div>
