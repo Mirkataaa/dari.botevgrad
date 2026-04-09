@@ -37,9 +37,8 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 
 // Configuration
 const SITE_NAME = "dari.botevgrad"
-const SENDER_DOMAIN = "notify.dari.botevgrad"
-const ROOT_DOMAIN = "dari.botevgrad"
-const FROM_DOMAIN = "notify.dari.botevgrad" // Domain shown in From address (may be root or sender subdomain)
+const SENDER_DOMAIN = "daribotevgrad.notify.miroplayground.online"
+const FROM_DOMAIN = "daribotevgrad.notify.miroplayground.online" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
@@ -220,7 +219,13 @@ async function handleWebhook(req: Request): Promise<Response> {
   // Build template props from payload.data (HookData structure)
   const templateProps = {
     siteName: SITE_NAME,
-    siteUrl: `https://${ROOT_DOMAIN}`,
+    siteUrl: (() => {
+      try {
+        return new URL(payload.data.url).origin
+      } catch {
+        return 'https://miroplayground.online'
+      }
+    })(),
     recipient: payload.data.email,
     confirmationUrl: payload.data.url,
     token: payload.data.token,
