@@ -59,12 +59,12 @@ export const useCampaignStats = () => {
     queryKey: ["campaign-stats"],
     queryFn: async () => {
       const [campaignsRes, donationsRes] = await Promise.all([
-        supabase.from("campaigns").select("id", { count: "exact" }).in("status", ["active", "completed"]),
-        supabase.from("public_donations" as any).select("amount").eq("status", "completed"),
+        supabase.from("campaigns").select("id, current_amount", { count: "exact" }).in("status", ["active", "completed", "closed"]),
+        supabase.from("public_donations" as any).select("id", { count: "exact", head: true }).eq("status", "completed"),
       ]);
-      const rows = (donationsRes.data || []) as unknown as { amount: number }[];
-      const totalRaised = rows.reduce((sum, d) => sum + Number(d.amount), 0);
-      const donationCount = rows.length;
+      const campaigns = (campaignsRes.data || []) as unknown as { current_amount: number }[];
+      const totalRaised = campaigns.reduce((sum, c) => sum + Number(c.current_amount || 0), 0);
+      const donationCount = donationsRes.count || 0;
       return {
         campaignCount: campaignsRes.count || 0,
         donationCount,

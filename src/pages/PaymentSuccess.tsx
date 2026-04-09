@@ -1,11 +1,32 @@
+import { useEffect } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { CheckCircle, ArrowLeft, Heart } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
   const campaignId = searchParams.get("campaign");
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+    queryClient.invalidateQueries({ queryKey: ["campaign-stats"] });
+
+    if (campaignId) {
+      queryClient.invalidateQueries({ queryKey: ["campaign", campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["donations", campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["my-campaign-subscription", campaignId, user?.id || ""] });
+    }
+
+    if (user?.id) {
+      queryClient.invalidateQueries({ queryKey: ["my-donations", user.id] });
+      queryClient.invalidateQueries({ queryKey: ["my-subscriptions", user.id] });
+    }
+  }, [campaignId, queryClient, user?.id]);
 
   return (
     <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4 py-16">
