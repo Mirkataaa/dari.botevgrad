@@ -64,9 +64,10 @@ export const useCampaignStats = () => {
       ]);
       const rows = (donationsRes.data || []) as unknown as { amount: number }[];
       const totalRaised = rows.reduce((sum, d) => sum + Number(d.amount), 0);
+      const donationCount = rows.length;
       return {
         campaignCount: campaignsRes.count || 0,
-        donorCount: 0,
+        donationCount,
         totalRaised,
       };
     },
