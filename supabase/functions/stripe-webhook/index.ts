@@ -103,6 +103,8 @@ serve(async (req) => {
         if (firstDonation) {
           await updateCampaignAmount(supabase, firstDonation.campaign_id);
           console.log("[stripe-webhook] First subscription donation recorded:", firstDonation.id);
+          // Send confirmation email for first subscription payment
+          await sendConfirmationEmail(supabase, session, firstDonation);
         }
       } else if (meta.campaign_id) {
         await updateCampaignAmount(supabase, meta.campaign_id);
@@ -200,6 +202,8 @@ serve(async (req) => {
         if (donation) {
           await updateCampaignAmount(supabase, donation.campaign_id);
           console.log("[stripe-webhook] Recurring donation recorded:", donation.id);
+          // Send confirmation email for recurring payment
+          await sendRecurringConfirmationEmail(supabase, sub, donation, invoice);
         }
       }
     }
