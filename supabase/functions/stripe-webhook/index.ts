@@ -302,3 +302,49 @@ async function sendConfirmationEmail(supabase: any, session: any, donation: { id
     console.log("[stripe-webhook] Donation confirmation email queued for", customerEmail);
   }
 }
+
+// Helper: send confirmation email for recurring payments
+async function sendRecurringConfirmationEmail(
+  supabase: any,
+  sub: { campaign_id: string; donor_email: string },
+  donation: { id: string; campaign_id: string; amount: number },
+  invoice: any
+) {
+  const customerEmail = sub.donor_email;
+  if (!customerEmail) return;
+
+  const donationDate = new Date().toLocaleDateString("bg-BG", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  const { data: campData } = await supabase
+    .from("campaigns")
+    .select("title")
+    .eq("id", donation.campaign_id)
+    .single();
+
+  const { error: emailError } = await supabase.functions.invoke(
+    "send-transactional-email",
+    {
+      body: {
+        templateName: "donation-confirmation",
+        recipientEmail: customerEmail,
+        idempotencyKey: `donation-confirm-${donation.id}`,
+        templateData: {
+          amount: String(donation.amount),
+          campaignTitle: campData?.title || "Кампания",
+          donationId: donation.id,
+          date: donationDate,
+        },
+      },
+    }
+  );
+
+  if (emailError) {
+    console.error("[stripe-webhook] Recurring email send error:", emailError.message);
+  } else {
+    console.log("[stripe-webhook] Recurring donation confirmation email queued for", customerEmail);
+  }
+}
