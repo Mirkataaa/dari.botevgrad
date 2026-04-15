@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const categories = [
-  { value: "all", label: "Всички" },
-  { value: "social", label: "Социални инициативи" },
-  { value: "healthcare", label: "Здравеопазване" },
-  { value: "education", label: "Образование и наука" },
-  { value: "culture", label: "Култура и традиции" },
-  { value: "ecology", label: "Екология и животни" },
-  { value: "infrastructure", label: "Инфраструктура" },
+const categoryKeys = [
+  { value: "all", key: "cat.all" },
+  { value: "social", key: "cat.social" },
+  { value: "healthcare", key: "cat.healthcare" },
+  { value: "education", key: "cat.education" },
+  { value: "culture", key: "cat.culture" },
+  { value: "ecology", key: "cat.ecology" },
+  { value: "infrastructure", key: "cat.infrastructure" },
 ];
 
 interface Props {
@@ -18,6 +19,7 @@ interface Props {
 }
 
 const CampaignFilters = ({ onFilterChange }: Props) => {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
 
@@ -33,7 +35,7 @@ const CampaignFilters = ({ onFilterChange }: Props) => {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Търсене по ключова дума..."
+          placeholder={t("filters.search")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9 pr-9"
@@ -48,14 +50,14 @@ const CampaignFilters = ({ onFilterChange }: Props) => {
         )}
       </div>
       <div className="flex flex-wrap gap-2">
-        {categories.map((c) => (
+        {categoryKeys.map((c) => (
           <Button
             key={c.value}
             variant={category === c.value ? "default" : "outline"}
             size="sm"
             onClick={() => setCategory(c.value)}
           >
-            {c.label}
+            {t(c.key)}
           </Button>
         ))}
       </div>

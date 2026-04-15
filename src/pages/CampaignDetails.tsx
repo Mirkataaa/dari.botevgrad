@@ -20,17 +20,19 @@ import { useMySubscriptionForCampaign } from "@/hooks/useMySubscription";
 import { useCancelSubscription } from "@/hooks/useSubscriptions";
 import { markReviewNotificationsAsSeen } from "@/hooks/useNotifications";
 import { useQueryClient } from "@tanstack/react-query";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const categoryMap: Record<string, string> = {
-  social: "Социални",
-  healthcare: "Здравеопазване",
-  education: "Образование",
-  culture: "Култура",
-  ecology: "Екология",
-  infrastructure: "Инфраструктура",
+const categoryKeyMap: Record<string, string> = {
+  social: "cat.social",
+  healthcare: "cat.healthcare",
+  education: "cat.education",
+  culture: "cat.culture",
+  ecology: "cat.ecology",
+  infrastructure: "cat.infrastructure",
 };
 
 const CampaignDetails = () => {
+  const { t, language } = useLanguage();
   const { id } = useParams();
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
@@ -42,12 +44,12 @@ const CampaignDetails = () => {
   const cancelMutation = useCancelSubscription();
 
   const queryClient = useQueryClient();
+  const locale = language === "en" ? "en-GB" : "bg-BG";
 
   useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"], ["donations", id || ""]]);
   useRealtimeSync("donations", [["campaign", id || ""], ["donations", id || ""], ["my-donations", user?.id || ""]]);
   useRealtimeSync("subscriptions", [["my-campaign-subscription", id || "", user?.id || ""], ["my-subscriptions", user?.id || ""]]);
 
-  // Mark rejections as seen when creator views their own campaign
   useEffect(() => {
     if (user && campaign && campaign.created_by === user.id && id) {
       markReviewNotificationsAsSeen(id).then(() => {
@@ -55,6 +57,7 @@ const CampaignDetails = () => {
       });
     }
   }, [user, campaign, id, queryClient]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
@@ -66,9 +69,9 @@ const CampaignDetails = () => {
   if (!campaign) {
     return (
       <div className="container flex min-h-[50vh] flex-col items-center justify-center gap-4">
-        <h1 className="font-heading text-2xl font-bold">Кампанията не е намерена</h1>
+        <h1 className="font-heading text-2xl font-bold">{t("details.notFound")}</h1>
         <Button asChild variant="outline">
-          <Link to="/active"><ArrowLeft className="mr-2 h-4 w-4" />Обратно</Link>
+          <Link to="/active"><ArrowLeft className="mr-2 h-4 w-4" />{t("details.backBtn")}</Link>
         </Button>
       </div>
     );
@@ -82,7 +85,7 @@ const CampaignDetails = () => {
   return (
     <div className="container py-8 md:py-12">
       <Button asChild variant="ghost" size="sm" className="mb-6">
-        <Link to="/active"><ArrowLeft className="mr-2 h-4 w-4" />Всички кампании</Link>
+        <Link to="/active"><ArrowLeft className="mr-2 h-4 w-4" />{t("details.back")}</Link>
       </Button>
 
       <div className="grid gap-8 lg:grid-cols-3">
@@ -91,24 +94,24 @@ const CampaignDetails = () => {
 
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="gap-1">
-              <Tag className="h-3 w-3" />{categoryMap[campaign.category] || campaign.category}
+              <Tag className="h-3 w-3" />{t(categoryKeyMap[campaign.category] || campaign.category)}
             </Badge>
             <Badge variant="outline" className="gap-1">
-              <Calendar className="h-3 w-3" />{new Date(campaign.created_at).toLocaleDateString("bg-BG")}
+              <Calendar className="h-3 w-3" />{new Date(campaign.created_at).toLocaleDateString(locale)}
             </Badge>
             {isRecurring && (
               <Badge className="gap-1 bg-accent text-accent-foreground">
-                <RefreshCw className="h-3 w-3" />Периодична
+                <RefreshCw className="h-3 w-3" />{t("details.recurring")}
               </Badge>
             )}
-            {isClosed && <Badge className="bg-primary text-primary-foreground">{campaign.status === "closed" ? "Затворена" : "Приключила"}</Badge>}
+            {isClosed && <Badge className="bg-primary text-primary-foreground">{campaign.status === "closed" ? t("details.closed") : t("details.finished")}</Badge>}
           </div>
 
           <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
           {canEdit && (
             <Button asChild variant="outline" size="sm" className="gap-1 mt-2 w-fit">
               <Link to={`/campaign/${campaign.id}/edit`}>
-                <Pencil className="h-4 w-4" /> Редактирай
+                <Pencil className="h-4 w-4" /> {t("details.edit")}
               </Link>
             </Button>
           )}
@@ -136,26 +139,25 @@ const CampaignDetails = () => {
               {isRecurring && (
                 <div className="text-center space-y-1">
                   <p className="text-2xl font-bold text-primary">{Number(campaign.current_amount)} €</p>
-                  <p className="text-sm text-muted-foreground">Събрани до момента</p>
+                  <p className="text-sm text-muted-foreground">{t("details.collectedSoFar")}</p>
                 </div>
               )}
 
-              {/* Subscription status or donate button */}
               {isRecurring && hasActiveSub ? (
                 <div className="space-y-4">
                   <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-2">
                     <p className="text-sm font-semibold text-primary flex items-center gap-2">
                       <RefreshCw className="h-4 w-4" />
-                      Активен абонамент: {mySubscription.amount} €/{mySubscription.interval === "month" ? "мес." : "год."}
+                      {t("details.activeSub")}: {mySubscription.amount} €/{mySubscription.interval === "month" ? t("details.perMonth") : t("details.perYear")}
                     </p>
                     {mySubscription.current_period_end && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        Следващо плащане: {new Date(mySubscription.current_period_end).toLocaleDateString("bg-BG")} в {new Date(mySubscription.current_period_end).toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" })}
+                        {t("details.nextPayment")}: {new Date(mySubscription.current_period_end).toLocaleDateString(locale)} {new Date(mySubscription.current_period_end).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}
                       </p>
                     )}
                     {mySubscription.status === "cancelling" && (
-                      <p className="text-xs text-destructive">Ще бъде спрян в края на текущия период.</p>
+                      <p className="text-xs text-destructive">{t("details.cancelledEndOfPeriod")}</p>
                     )}
                   </div>
                   {mySubscription.status === "active" && (
@@ -170,7 +172,7 @@ const CampaignDetails = () => {
                       ) : (
                         <XCircle className="mr-2 h-4 w-4" />
                       )}
-                      Откажи абонамент
+                      {t("details.cancelSub")}
                     </Button>
                   )}
                   <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
@@ -185,17 +187,17 @@ const CampaignDetails = () => {
               <Separator />
               <div>
                 <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-muted-foreground">
-                  Дарения ({donations.length})
+                  {t("details.donations")} ({donations.length})
                 </h3>
                 {donations.length === 0 ? (
-                  <p className="mt-3 text-sm text-muted-foreground">Все още няма дарения</p>
+                  <p className="mt-3 text-sm text-muted-foreground">{t("details.noDonations")}</p>
                 ) : (
                   <ul className="mt-3 space-y-3">
                     {donations.slice(0, 20).map((d) => (
                       <li key={d.id} className="flex items-start justify-between rounded-lg bg-secondary/60 p-3">
                         <div>
-                          <p className="text-sm font-medium">{d.is_anonymous ? "Анонимен" : (d.donor_name || "Дарител")}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString("bg-BG")}</p>
+                          <p className="text-sm font-medium">{d.is_anonymous ? t("details.anonymous") : (d.donor_name || t("details.donor"))}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{new Date(d.created_at).toLocaleDateString(locale)}</p>
                         </div>
                         <span className="text-sm font-bold text-primary">{Number(d.amount)} €</span>
                       </li>
