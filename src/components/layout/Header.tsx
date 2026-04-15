@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogIn, LogOut, User, ShieldCheck, PlusCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useProfile } from "@/hooks/useProfile";
+import { useLanguage } from "@/contexts/LanguageContext";
 import NotificationBell from "./NotificationBell";
+import LanguageSwitcher from "./LanguageSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,14 +19,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import crestLogo from "@/assets/botevgrad-crest.jpg";
 
-const navLinks = [
-  { to: "/", label: "Начало" },
-  { to: "/active", label: "Активни кампании" },
-  { to: "/completed", label: "Приключили кампании" },
-  { to: "/about", label: "За нас" },
-];
-
 const Header = () => {
+  const { t } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -33,6 +28,13 @@ const Header = () => {
   const { isAdmin } = useIsAdmin();
   const { profile } = useProfile();
   const [canCreate, setCanCreate] = useState(false);
+
+  const navLinks = [
+    { to: "/", label: t("nav.home") },
+    { to: "/active", label: t("nav.active") },
+    { to: "/completed", label: t("nav.completed") },
+    { to: "/about", label: t("nav.about") },
+  ];
 
   useEffect(() => {
     if (!user) { setCanCreate(false); return; }
@@ -64,7 +66,7 @@ const Header = () => {
           <img src={crestLogo} alt="Герб на Ботевград" className="h-8 w-auto sm:h-10 md:h-12" />
           <div className="hidden sm:block">
             <span className="font-heading text-lg font-bold text-foreground">Заедно за Ботевград</span>
-            <p className="text-xs text-muted-foreground">Дарителска платформа</p>
+            <p className="text-xs text-muted-foreground">{t("nav.platform")}</p>
           </div>
         </Link>
 
@@ -83,6 +85,8 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
+
+          <LanguageSwitcher />
 
           {!loading && (
             <>
@@ -108,23 +112,23 @@ const Header = () => {
                     {isAdmin && (
                       <DropdownMenuItem onClick={() => navigate("/admin")}>
                         <ShieldCheck className="mr-2 h-4 w-4" />
-                        Админ панел
+                        {t("nav.admin")}
                       </DropdownMenuItem>
                     )}
                     {(isAdmin || canCreate) && (
                       <DropdownMenuItem onClick={() => navigate("/campaigns/create")}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Създай кампания
+                        {t("nav.createCampaign")}
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuItem onClick={() => navigate("/profile")}>
                       <User className="mr-2 h-4 w-4" />
-                      Моят профил
+                      {t("nav.profile")}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                       <LogOut className="mr-2 h-4 w-4" />
-                      Изход
+                      {t("nav.logout")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -134,11 +138,11 @@ const Header = () => {
                   <Button variant="ghost" size="sm" asChild>
                     <Link to="/login">
                       <LogIn className="mr-1.5 h-4 w-4" />
-                      Вход
+                      {t("nav.login")}
                     </Link>
                   </Button>
                   <Button size="sm" asChild>
-                    <Link to="/register">Регистрация</Link>
+                    <Link to="/register">{t("nav.register")}</Link>
                   </Button>
                 </div>
               )}
@@ -146,14 +150,16 @@ const Header = () => {
           )}
         </nav>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden"
-          onClick={() => setMobileOpen(!mobileOpen)}
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
+        <div className="flex items-center gap-1 md:hidden">
+          <LanguageSwitcher />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
       </div>
 
       {mobileOpen && (
@@ -192,7 +198,7 @@ const Header = () => {
                         onClick={() => setMobileOpen(false)}
                         className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
                       >
-                        <ShieldCheck className="mr-2 h-4 w-4" /> Админ панел
+                        <ShieldCheck className="mr-2 h-4 w-4" /> {t("nav.admin")}
                       </Link>
                     )}
                     <Link
@@ -200,14 +206,14 @@ const Header = () => {
                       onClick={() => setMobileOpen(false)}
                       className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
                     >
-                      <User className="mr-2 h-4 w-4" /> Моят профил
+                      <User className="mr-2 h-4 w-4" /> {t("nav.profile")}
                     </Link>
                     <button
                       onClick={() => { handleSignOut(); setMobileOpen(false); }}
                       className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-destructive hover:bg-accent"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
-                      Изход
+                      {t("nav.logout")}
                     </button>
                   </>
                 ) : (
@@ -215,11 +221,11 @@ const Header = () => {
                     <Button variant="outline" asChild onClick={() => setMobileOpen(false)}>
                       <Link to="/login">
                         <LogIn className="mr-1.5 h-4 w-4" />
-                        Вход
+                        {t("nav.login")}
                       </Link>
                     </Button>
                     <Button asChild onClick={() => setMobileOpen(false)}>
-                      <Link to="/register">Регистрация</Link>
+                      <Link to="/register">{t("nav.register")}</Link>
                     </Button>
                   </div>
                 )}

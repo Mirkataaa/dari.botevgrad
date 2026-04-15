@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Share2, Copy, Check, Facebook, Twitter, Instagram, Link2 } from "lucide-react";
+import { Share2, Copy, Check, Facebook, Instagram } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   campaignId: string;
@@ -14,26 +15,35 @@ interface Props {
 
 const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default" }: Props) => {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
   const url = `${window.location.origin}/campaign/${campaignId}`;
   const encodedUrl = encodeURIComponent(url);
-  const encodedTitle = encodeURIComponent(campaignTitle);
 
   const embedCode = `<iframe src="${url}" width="400" height="300" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(url);
     setCopied(true);
-    toast({ title: "Линкът е копиран!" });
+    toast({ title: t("share.linkCopied") });
     setTimeout(() => setCopied(false), 2000);
   };
 
   const copyEmbed = async () => {
     await navigator.clipboard.writeText(embedCode);
     setEmbedCopied(true);
-    toast({ title: "Embed кодът е копиран!" });
+    toast({ title: t("share.embedCopied") });
     setTimeout(() => setEmbedCopied(false), 2000);
+  };
+
+  // Use window.location.assign instead of window.open to avoid COOP issues
+  const openShareUrl = (shareUrl: string) => {
+    const link = document.createElement("a");
+    link.href = shareUrl;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.click();
   };
 
   const handleShare = async () => {
@@ -53,23 +63,15 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
     {
       name: "Facebook",
       icon: Facebook,
-      url: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-    },
-    {
-      name: "X (Twitter)",
-      icon: Twitter,
-      url: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`,
+      onClick: () => openShareUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`),
     },
     {
       name: "Instagram",
       icon: Instagram,
-      url: `https://www.instagram.com/`, // Instagram doesn't support URL sharing - we copy link
-      action: copyLink,
-    },
-    {
-      name: "Threads",
-      icon: Link2,
-      url: `https://www.threads.net/intent/post?text=${encodedTitle}%20${encodedUrl}`,
+      onClick: () => {
+        copyLink();
+        toast({ title: t("share.instagramHint") });
+      },
     },
   ];
 
@@ -82,8 +84,8 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Сподели кампанията</DialogTitle>
-          <DialogDescription>Изберете начин за споделяне на кампанията с приятели.</DialogDescription>
+          <DialogTitle>{t("share.title")}</DialogTitle>
+          <DialogDescription>{t("share.desc")}</DialogDescription>
         </DialogHeader>
 
         {campaignImage && (
@@ -109,14 +111,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
               key={s.name}
               variant="outline"
               className="gap-2 text-sm"
-              onClick={() => {
-                if (s.action) {
-                  s.action();
-                  toast({ title: "Линкът е копиран! Споделете го в Instagram." });
-                } else {
-                  window.open(s.url, "_blank");
-                }
-              }}
+              onClick={s.onClick}
             >
               <s.icon className="h-4 w-4" /> {s.name}
             </Button>
@@ -125,7 +120,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
 
         {/* Embed code */}
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Embed код (iframe)</p>
+          <p className="text-xs font-medium text-muted-foreground">{t("share.embedLabel")}</p>
           <div className="flex gap-2">
             <Input value={embedCode} readOnly className="text-xs font-mono" />
             <Button variant="outline" size="icon" onClick={copyEmbed}>
