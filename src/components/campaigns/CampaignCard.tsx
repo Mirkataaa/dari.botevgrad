@@ -9,17 +9,19 @@ import type { Campaign } from "@/hooks/useCampaigns";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const categoryMap: Record<string, string> = {
-  social: "Социални",
-  healthcare: "Здравеопазване",
-  education: "Образование",
-  culture: "Култура",
-  ecology: "Екология",
-  infrastructure: "Инфраструктура",
+const categoryKeyMap: Record<string, string> = {
+  social: "cat.social",
+  healthcare: "cat.healthcare",
+  education: "cat.education",
+  culture: "cat.culture",
+  ecology: "cat.ecology",
+  infrastructure: "cat.infrastructure",
 };
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
+  const { t } = useLanguage();
   const { id, title, short_description, target_amount, current_amount, status, category, images } = campaign;
   const isClosed = status === "completed" || status === "closed";
   const isPending = status === "pending";
@@ -52,21 +54,21 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
           </div>
         )}
         <Badge className="absolute left-3 top-3 bg-card/90 text-foreground backdrop-blur-sm hover:bg-card">
-          {categoryMap[category] || category}
+          {t(categoryKeyMap[category] || category)}
         </Badge>
         {isClosed && (
           <Badge className="absolute right-3 top-3 bg-primary text-primary-foreground">
-            Приключила
+            {t("card.completed")}
           </Badge>
         )}
         {isPending && (
           <Badge className="absolute right-3 top-3 bg-amber-500 text-white">
-            Чака одобрение
+            {t("card.pendingApproval")}
           </Badge>
         )}
         {hasPendingDraft && !isPending && (
           <Badge className="absolute right-3 top-10 bg-orange-500 text-white">
-            Чакаща редакция
+            {t("card.pendingDraft")}
           </Badge>
         )}
       </div>
@@ -88,14 +90,14 @@ const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
         {isRecurring && (
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <RefreshCw className="h-3.5 w-3.5" />
-            <span>Периодична кампания · {Number(current_amount)} € събрани</span>
+            <span>{t("card.recurring")} · {Number(current_amount)} € {t("card.collected")}</span>
           </div>
         )}
 
         <div className="flex items-center gap-2 pt-1">
           <Button asChild className="flex-1" size="sm" disabled={isClosed}>
             <Link to={`/campaign/${id}`}>
-              {isClosed ? "Приключила" : isRecurring ? "Подкрепи" : "Дари сега"}
+              {isClosed ? t("card.completed") : isRecurring ? t("card.support") : t("card.donateNow")}
             </Link>
           </Button>
           <ShareWidget campaignId={id} campaignTitle={title} campaignImage={imageUrl} />

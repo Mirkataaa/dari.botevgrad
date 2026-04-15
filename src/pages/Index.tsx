@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import CampaignCard from "@/components/campaigns/CampaignCard";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { useCampaigns, useCampaignStats } from "@/hooks/useCampaigns";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 import hero1 from "@/assets/hero/hero-1.jpg";
 import hero2 from "@/assets/hero/hero-2.jpeg";
@@ -16,6 +17,7 @@ import hero5 from "@/assets/hero/hero-5.jpg";
 const heroImages = [hero1, hero2, hero3, hero4, hero5];
 
 const Index = () => {
+  const { t } = useLanguage();
   const { data: activeCampaigns = [] } = useCampaigns("active");
   const { data: stats } = useCampaignStats();
   const [currentImage, setCurrentImage] = useState(0);
@@ -29,9 +31,9 @@ const Index = () => {
   }, []);
 
   const statItems = [
-    { icon: Heart, label: "Кампании", value: String(stats?.campaignCount || 0) },
-    { icon: Users, label: "Дарения", value: String(stats?.donationCount || 0) },
-    { icon: Target, label: "Събрани средства", value: `${(stats?.totalRaised || 0).toLocaleString("bg-BG")} €` },
+    { icon: Heart, label: t("index.campaigns"), value: String(stats?.campaignCount || 0) },
+    { icon: Users, label: t("index.donations"), value: String(stats?.donationCount || 0) },
+    { icon: Target, label: t("index.raised"), value: `${(stats?.totalRaised || 0).toLocaleString("bg-BG")} €` },
   ];
 
   return (
@@ -59,15 +61,15 @@ const Index = () => {
             className="mx-auto max-w-2xl text-center"
           >
             <h1 className="font-heading text-4xl font-extrabold leading-tight drop-shadow-lg md:text-5xl lg:text-6xl">
-              Заедно за Ботевград
+              {t("index.heroTitle")}
             </h1>
             <p className="mt-4 text-lg leading-relaxed opacity-90 drop-shadow-md md:text-xl">
-              Дарителска платформа на Община Ботевград. Подкрепете каузите, които правят нашия град по-добро място за живеене.
+              {t("index.heroDesc")}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <Button asChild size="lg" variant="secondary" className="font-semibold">
                 <Link to="/active">
-                  Разгледай кампании
+                  {t("index.browseCampaigns")}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
@@ -95,8 +97,8 @@ const Index = () => {
       {activeCampaigns.length > 0 && (
         <section className="py-12 md:py-16">
           <div className="container">
-            <h2 className="font-heading text-2xl font-bold md:text-3xl">Активни кампании</h2>
-            <p className="mt-2 text-muted-foreground">Подкрепете кауза, която ви е близка</p>
+            <h2 className="font-heading text-2xl font-bold md:text-3xl">{t("index.activeCampaigns")}</h2>
+            <p className="mt-2 text-muted-foreground">{t("index.activeCampaignsDesc")}</p>
 
             <div className="mt-8 px-12">
               <Carousel opts={{ align: "start", loop: true }}>
@@ -121,12 +123,12 @@ const Index = () => {
           <div className="container">
             <div className="flex items-end justify-between">
               <div>
-                <h2 className="font-heading text-2xl font-bold md:text-3xl">Препоръчани кампании</h2>
-                <p className="mt-2 text-muted-foreground">Кампании, които се нуждаят от вашата помощ</p>
+                <h2 className="font-heading text-2xl font-bold md:text-3xl">{t("index.recommended")}</h2>
+                <p className="mt-2 text-muted-foreground">{t("index.recommendedDesc")}</p>
               </div>
               <Button asChild variant="ghost" className="hidden sm:flex">
                 <Link to="/active">
-                  Виж всички <ArrowRight className="ml-1 h-4 w-4" />
+                  {t("index.viewAll")} <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
             </div>
@@ -137,7 +139,7 @@ const Index = () => {
             </div>
             <div className="mt-6 text-center sm:hidden">
               <Button asChild variant="outline">
-                <Link to="/active">Виж всички кампании</Link>
+                <Link to="/active">{t("index.viewAllCampaigns")}</Link>
               </Button>
             </div>
           </div>

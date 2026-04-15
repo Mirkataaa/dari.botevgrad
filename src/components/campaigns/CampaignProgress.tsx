@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CampaignProgressProps {
   collected: number;
@@ -8,6 +9,7 @@ interface CampaignProgressProps {
 }
 
 const CampaignProgress = ({ collected, target, size = "md", showLabels = true }: CampaignProgressProps) => {
+  const { t } = useLanguage();
   const percentage = target > 0 ? Math.min((collected / target) * 100, 100) : 0;
 
   const heightClass = {
@@ -30,7 +32,7 @@ const CampaignProgress = ({ collected, target, size = "md", showLabels = true }:
             {collected.toLocaleString("bg-BG")} €
           </span>
           <span className="text-muted-foreground">
-            от {target.toLocaleString("bg-BG")} € ({Math.round(percentage)}%)
+            {t("progress.of")} {target.toLocaleString("bg-BG")} € ({Math.round(percentage)}%)
           </span>
         </div>
       )}
