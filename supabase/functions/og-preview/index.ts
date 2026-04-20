@@ -27,26 +27,36 @@ function buildHtml(opts: {
   amount?: number;
   target?: number;
   deadline?: string | null;
+  lang?: "bg" | "en";
 }) {
-  const { title, description, image, url, amount, target, deadline } = opts;
+  const { title, description, image, url, amount, target, deadline, lang = "bg" } = opts;
+  const isEn = lang === "en";
+  const collectedLabel = isEn ? "Raised" : "Събрани";
+  const ofLabel = isEn ? "of" : "от";
+  const deadlineLabel = isEn ? "Deadline" : "Краен срок";
+  const dateLocale = isEn ? "en-GB" : "bg-BG";
+  const siteName = isEn ? "Together for Botevgrad" : "Заедно за Ботевград";
+  const viewLabel = isEn ? "View campaign" : "Виж кампанията";
+  const ogLocale = isEn ? "en_US" : "bg_BG";
+
   const progressLine =
     target && target > 0
-      ? `Събрани ${amount ?? 0} € от ${target} €`
-      : `Събрани ${amount ?? 0} €`;
+      ? `${collectedLabel} ${amount ?? 0} € ${ofLabel} ${target} €`
+      : `${collectedLabel} ${amount ?? 0} €`;
   const deadlineLine = deadline
-    ? ` · Краен срок: ${new Date(deadline).toLocaleDateString("bg-BG")}`
+    ? ` · ${deadlineLabel}: ${new Date(deadline).toLocaleDateString(dateLocale)}`
     : "";
   const richDesc = `${description} — ${progressLine}${deadlineLine}`;
 
   return `<!doctype html>
-<html lang="bg" prefix="og: https://ogp.me/ns#">
+<html lang="${lang}" prefix="og: https://ogp.me/ns#">
 <head>
 <meta charset="utf-8" />
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(richDesc)}" />
 
 <meta property="og:type" content="website" />
-<meta property="og:site_name" content="Заедно за Ботевград" />
+<meta property="og:site_name" content="${escapeHtml(siteName)}" />
 <meta property="og:url" content="${escapeHtml(url)}" />
 <meta property="og:title" content="${escapeHtml(title)}" />
 <meta property="og:description" content="${escapeHtml(richDesc)}" />
@@ -55,7 +65,7 @@ function buildHtml(opts: {
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="${escapeHtml(title)}" />
-<meta property="og:locale" content="bg_BG" />
+<meta property="og:locale" content="${ogLocale}" />
 
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${escapeHtml(title)}" />
@@ -68,7 +78,7 @@ function buildHtml(opts: {
 <body>
 <h1>${escapeHtml(title)}</h1>
 <p>${escapeHtml(richDesc)}</p>
-<p><a href="${escapeHtml(url)}">Виж кампанията</a></p>
+<p><a href="${escapeHtml(url)}">${escapeHtml(viewLabel)}</a></p>
 </body>
 </html>`;
 }
@@ -105,40 +115,59 @@ Deno.serve(async (req) => {
     const { data: campaign } = await supabase
       .from("campaigns")
       .select(
-        "id, title, short_description, description, images, main_image_index, current_amount, target_amount, deadline"
+        "id, title, title_en, short_description, short_description_en, description, description_en, images, main_image_index, current_amount, target_amount, deadline"
       )
       .eq("id", campaignId)
       .maybeSingle();
 
+    const langParam = url.searchParams.get("lang");
+    const lang: "bg" | "en" = langParam === "en" ? "en" : "bg";
+
     if (!campaign) {
       return new Response(
         buildHtml({
-          title: "Заедно за Ботевград",
-          description: "Дарителска платформа на Община Ботевград.",
+          title: lang === "en" ? "Together for Botevgrad" : "Заедно за Ботевград",
+          description:
+            lang === "en"
+              ? "Donation platform for Botevgrad Municipality."
+              : "Дарителска платформа на Община Ботевград.",
           image: `${siteOrigin}/placeholder.svg`,
           url: spaUrl,
+          lang,
         }),
         { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }
       );
     }
 
-    const mainIdx = campaign.main_image_index ?? 0;
+    const mainIdx = (campaign as any).main_image_index ?? 0;
     const image =
       (campaign.images && (campaign.images[mainIdx] || campaign.images[0])) ||
       `${siteOrigin}/placeholder.svg`;
+
+    const title =
+      (lang === "en" && (campaign as any).title_en) || campaign.title;
+    const shortDesc =
+      (lang === "en" && (campaign as any).short_description_en) ||
+      campaign.short_description;
+    const fullDesc =
+      (lang === "en" && (campaign as any).description_en) || campaign.description;
+
     const description =
-      campaign.short_description ||
-      (campaign.description || "").slice(0, 200) ||
-      "Подкрепете тази кауза в Ботевград.";
+      shortDesc ||
+      (fullDesc || "").slice(0, 200) ||
+      (lang === "en"
+        ? "Support this cause in Botevgrad."
+        : "Подкрепете тази кауза в Ботевград.");
 
     const html = buildHtml({
-      title: campaign.title,
+      title,
       description,
       image,
       url: spaUrl,
       amount: Number(campaign.current_amount || 0),
       target: Number(campaign.target_amount || 0),
       deadline: campaign.deadline,
+      lang,
     });
 
     return new Response(html, {

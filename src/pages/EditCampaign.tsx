@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaign } from "@/hooks/useCampaigns";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ImagePlus, X, Loader2, FileUp, Video, Star, AlertTriangle } from "lucide-react";
+import { ImagePlus, X, Loader2, FileUp, Video, Star, AlertTriangle, Languages } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -50,6 +52,7 @@ const EditCampaign = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: campaign, isLoading } = useCampaign(id || "");
@@ -57,6 +60,10 @@ const EditCampaign = () => {
   const [title, setTitle] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [description, setDescription] = useState("");
+  const [titleEn, setTitleEn] = useState("");
+  const [shortDescEn, setShortDescEn] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
+  const [translating, setTranslating] = useState(false);
   const [category, setCategory] = useState<CampaignCategory | "">("");
   const [targetAmount, setTargetAmount] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -108,6 +115,9 @@ const EditCampaign = () => {
       setTitle(campaign.title);
       setShortDesc(campaign.short_description || "");
       setDescription(campaign.description);
+      setTitleEn((campaign as any).title_en || "");
+      setShortDescEn((campaign as any).short_description_en || "");
+      setDescriptionEn((campaign as any).description_en || "");
       setCategory(campaign.category);
       setTargetAmount(String(campaign.target_amount));
       setDeadline(campaign.deadline ? new Date(campaign.deadline).toISOString().split("T")[0] : "");
@@ -117,6 +127,32 @@ const EditCampaign = () => {
       setMainImageIndex((campaign as any).main_image_index || 0);
     }
   }, [campaign]);
+
+  const handleAutoTranslate = async () => {
+    if (!title.trim() && !shortDesc.trim() && !description.trim()) {
+      toast({ variant: "destructive", title: t("form.translateBgFirst") });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("translate-campaign", {
+        body: {
+          title: title.trim() || undefined,
+          short_description: shortDesc.trim() || undefined,
+          description: description.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      if (data?.title_en) setTitleEn(data.title_en);
+      if (data?.short_description_en) setShortDescEn(data.short_description_en);
+      if (data?.description_en) setDescriptionEn(data.description_en);
+      toast({ title: t("form.translatedOk") });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t("form.translateError"), description: err.message });
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -224,6 +260,27 @@ const EditCampaign = () => {
 
     setSubmitting(true);
     try {
+      // Best-effort auto-translate before save if EN fields are empty
+      let finalTitleEn = titleEn.trim();
+      let finalShortEn = shortDescEn.trim();
+      let finalDescEn = descriptionEn.trim();
+      if (!finalTitleEn && !finalShortEn && !finalDescEn) {
+        try {
+          const { data } = await supabase.functions.invoke("translate-campaign", {
+            body: {
+              title: parsed.data.title,
+              short_description: parsed.data.short_description,
+              description: parsed.data.description,
+            },
+          });
+          if (data?.title_en) finalTitleEn = data.title_en;
+          if (data?.short_description_en) finalShortEn = data.short_description_en;
+          if (data?.description_en) finalDescEn = data.description_en;
+        } catch (e) {
+          console.warn("Auto-translate on submit failed (non-blocking)", e);
+        }
+      }
+
       const [newImageUrls, newDocUrls] = await Promise.all([
         newImages.length > 0 ? uploadFiles(newImages, "campaign-images") : Promise.resolve([]),
         newDocs.length > 0 ? uploadFiles(newDocs, "campaign-documents") : Promise.resolve([]),
@@ -239,6 +296,9 @@ const EditCampaign = () => {
           title: parsed.data.title,
           short_description: parsed.data.short_description,
           description: parsed.data.description,
+          title_en: finalTitleEn || null,
+          short_description_en: finalShortEn || null,
+          description_en: finalDescEn || null,
           category: parsed.data.category,
           target_amount: parsed.data.target_amount ?? campaign.target_amount,
           deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
@@ -246,7 +306,7 @@ const EditCampaign = () => {
           documents: allDocUrls,
           videos: cleanVideoUrls,
           main_image_index: mainImageIndex,
-        }).eq("id", campaign.id);
+        } as any).eq("id", campaign.id);
         if (error) throw error;
         toast({ title: "Кампанията е обновена" });
         navigate(`/campaign/${campaign.id}`);
@@ -258,6 +318,9 @@ const EditCampaign = () => {
           title: parsed.data.title,
           short_description: parsed.data.short_description,
           description: parsed.data.description,
+          title_en: finalTitleEn || null,
+          short_description_en: finalShortEn || null,
+          description_en: finalDescEn || null,
           category: parsed.data.category,
           target_amount: parsed.data.target_amount ?? campaign.target_amount,
           deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
@@ -266,7 +329,7 @@ const EditCampaign = () => {
           videos: cleanVideoUrls,
           main_image_index: mainImageIndex,
           status: "pending_review",
-        });
+        } as any);
         if (error) throw error;
         toast({ title: "Промените са изпратени за одобрение", description: "Администратор ще прегледа промените." });
         navigate("/profile");
@@ -309,12 +372,6 @@ const EditCampaign = () => {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="title">Заглавие *</Label>
-              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} maxLength={200} />
-              {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
-            </div>
-
-            <div className="space-y-2">
               <Label>Категория *</Label>
               <Select value={category} onValueChange={(v) => setCategory(v as CampaignCategory)}>
                 <SelectTrigger><SelectValue placeholder="Изберете категория" /></SelectTrigger>
@@ -325,19 +382,57 @@ const EditCampaign = () => {
               {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="short_desc">Кратко описание *</Label>
-              <Textarea id="short_desc" value={shortDesc} onChange={e => setShortDesc(e.target.value)} rows={2} maxLength={300} />
-              <p className="text-xs text-muted-foreground">{shortDesc.length}/300</p>
-              {errors.short_description && <p className="text-sm text-destructive">{errors.short_description}</p>}
-            </div>
+            {/* Multilingual content tabs */}
+            <Tabs defaultValue="bg" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="bg">{t("form.langTab.bg")}</TabsTrigger>
+                <TabsTrigger value="en">{t("form.langTab.en")}</TabsTrigger>
+              </TabsList>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">Пълно описание *</Label>
-              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={6} maxLength={10000} />
-              <p className="text-xs text-muted-foreground">{description.length}/10000</p>
-              {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-            </div>
+              <TabsContent value="bg" className="space-y-6 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Заглавие *</Label>
+                  <Input id="title" value={title} onChange={e => setTitle(e.target.value)} maxLength={200} />
+                  {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="short_desc">Кратко описание *</Label>
+                  <Textarea id="short_desc" value={shortDesc} onChange={e => setShortDesc(e.target.value)} rows={2} maxLength={300} />
+                  <p className="text-xs text-muted-foreground">{shortDesc.length}/300</p>
+                  {errors.short_description && <p className="text-sm text-destructive">{errors.short_description}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Пълно описание *</Label>
+                  <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} rows={6} maxLength={10000} />
+                  <p className="text-xs text-muted-foreground">{description.length}/10000</p>
+                  {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="en" className="space-y-4 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">{t("form.translateHint")}</p>
+                  <Button type="button" variant="outline" size="sm" onClick={handleAutoTranslate} disabled={translating} className="gap-2 shrink-0">
+                    {translating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Languages className="h-4 w-4" />}
+                    {translating ? t("form.translating") : t("form.autoTranslate")}
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title_en">{t("form.title_en")}</Label>
+                  <Input id="title_en" value={titleEn} onChange={e => setTitleEn(e.target.value)} maxLength={200} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="short_desc_en">{t("form.short_desc_en")}</Label>
+                  <Textarea id="short_desc_en" value={shortDescEn} onChange={e => setShortDescEn(e.target.value)} rows={2} maxLength={300} />
+                  <p className="text-xs text-muted-foreground">{shortDescEn.length}/300</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description_en">{t("form.description_en")}</Label>
+                  <Textarea id="description_en" value={descriptionEn} onChange={e => setDescriptionEn(e.target.value)} rows={6} maxLength={10000} />
+                  <p className="text-xs text-muted-foreground">{descriptionEn.length}/10000</p>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {campaign.campaign_type !== "recurring" && (
               <div className="space-y-2">

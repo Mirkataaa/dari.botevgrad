@@ -21,6 +21,7 @@ export type Database = {
           created_at: string
           deadline: string | null
           description: string
+          description_en: string | null
           documents: string[] | null
           id: string
           images: string[] | null
@@ -29,10 +30,12 @@ export type Database = {
           reviewed_by: string | null
           seen_at: string | null
           short_description: string | null
+          short_description_en: string | null
           status: string
           submitted_by: string
           target_amount: number
           title: string
+          title_en: string | null
           videos: string[] | null
         }
         Insert: {
@@ -41,6 +44,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description: string
+          description_en?: string | null
           documents?: string[] | null
           id?: string
           images?: string[] | null
@@ -49,10 +53,12 @@ export type Database = {
           reviewed_by?: string | null
           seen_at?: string | null
           short_description?: string | null
+          short_description_en?: string | null
           status?: string
           submitted_by: string
           target_amount: number
           title: string
+          title_en?: string | null
           videos?: string[] | null
         }
         Update: {
@@ -61,6 +67,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           description?: string
+          description_en?: string | null
           documents?: string[] | null
           id?: string
           images?: string[] | null
@@ -69,10 +76,12 @@ export type Database = {
           reviewed_by?: string | null
           seen_at?: string | null
           short_description?: string | null
+          short_description_en?: string | null
           status?: string
           submitted_by?: string
           target_amount?: number
           title?: string
+          title_en?: string | null
           videos?: string[] | null
         }
         Relationships: [
@@ -202,15 +211,18 @@ export type Database = {
           current_amount: number
           deadline: string | null
           description: string
+          description_en: string | null
           documents: string[] | null
           id: string
           images: string[] | null
           is_recommended: boolean
           main_image_index: number
           short_description: string | null
+          short_description_en: string | null
           status: Database["public"]["Enums"]["campaign_status"]
           target_amount: number
           title: string
+          title_en: string | null
           updated_at: string
           videos: string[] | null
         }
@@ -222,15 +234,18 @@ export type Database = {
           current_amount?: number
           deadline?: string | null
           description: string
+          description_en?: string | null
           documents?: string[] | null
           id?: string
           images?: string[] | null
           is_recommended?: boolean
           main_image_index?: number
           short_description?: string | null
+          short_description_en?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_amount: number
           title: string
+          title_en?: string | null
           updated_at?: string
           videos?: string[] | null
         }
@@ -242,15 +257,18 @@ export type Database = {
           current_amount?: number
           deadline?: string | null
           description?: string
+          description_en?: string | null
           documents?: string[] | null
           id?: string
           images?: string[] | null
           is_recommended?: boolean
           main_image_index?: number
           short_description?: string | null
+          short_description_en?: string | null
           status?: Database["public"]["Enums"]["campaign_status"]
           target_amount?: number
           title?: string
+          title_en?: string | null
           updated_at?: string
           videos?: string[] | null
         }

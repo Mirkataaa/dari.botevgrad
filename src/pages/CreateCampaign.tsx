@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { ImagePlus, X, Loader2, FileUp, Video, Star, RefreshCw } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImagePlus, X, Loader2, FileUp, Video, Star, RefreshCw, Languages } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -41,10 +43,15 @@ const CreateCampaign = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const [title, setTitle] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [description, setDescription] = useState("");
+  const [titleEn, setTitleEn] = useState("");
+  const [shortDescEn, setShortDescEn] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
+  const [translating, setTranslating] = useState(false);
   const [category, setCategory] = useState<CampaignCategory | "">("");
   const [targetAmount, setTargetAmount] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -115,6 +122,33 @@ const CreateCampaign = () => {
     setVideoUrls(prev => prev.filter((_, i) => i !== index));
   };
 
+  // --- Auto-translate BG -> EN ---
+  const handleAutoTranslate = async () => {
+    if (!title.trim() && !shortDesc.trim() && !description.trim()) {
+      toast({ variant: "destructive", title: t("form.translateBgFirst") });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("translate-campaign", {
+        body: {
+          title: title.trim() || undefined,
+          short_description: shortDesc.trim() || undefined,
+          description: description.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      if (data?.title_en) setTitleEn(data.title_en);
+      if (data?.short_description_en) setShortDescEn(data.short_description_en);
+      if (data?.description_en) setDescriptionEn(data.description_en);
+      toast({ title: t("form.translatedOk") });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t("form.translateError"), description: err.message });
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   // --- Upload helpers ---
   const uploadFiles = async (files: File[], bucket: string): Promise<string[]> => {
     if (!user) return [];
@@ -160,6 +194,27 @@ const CreateCampaign = () => {
 
     setSubmitting(true);
     try {
+      // If user did not run translate, do it silently before insert (best-effort)
+      let finalTitleEn = titleEn.trim();
+      let finalShortEn = shortDescEn.trim();
+      let finalDescEn = descriptionEn.trim();
+      if (!finalTitleEn && !finalShortEn && !finalDescEn) {
+        try {
+          const { data } = await supabase.functions.invoke("translate-campaign", {
+            body: {
+              title: parsed.data.title,
+              short_description: parsed.data.short_description,
+              description: parsed.data.description,
+            },
+          });
+          if (data?.title_en) finalTitleEn = data.title_en;
+          if (data?.short_description_en) finalShortEn = data.short_description_en;
+          if (data?.description_en) finalDescEn = data.description_en;
+        } catch (e) {
+          console.warn("Auto-translate on submit failed (non-blocking)", e);
+        }
+      }
+
       const [imageUrls, docUrls] = await Promise.all([
         images.length > 0 ? uploadFiles(images, "campaign-images") : Promise.resolve([]),
         documents.length > 0 ? uploadFiles(documents, "campaign-documents") : Promise.resolve([]),
@@ -171,6 +226,9 @@ const CreateCampaign = () => {
         title: parsed.data.title,
         short_description: parsed.data.short_description,
         description: parsed.data.description,
+        title_en: finalTitleEn || null,
+        short_description_en: finalShortEn || null,
+        description_en: finalDescEn || null,
         category: parsed.data.category,
         target_amount: isRecurring ? 0 : Number(targetAmount),
         deadline: isRecurring ? null : (parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null),
@@ -205,13 +263,6 @@ const CreateCampaign = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Title */}
-            <div className="space-y-2">
-              <Label htmlFor="title">Заглавие *</Label>
-              <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Напр. Ремонт на детска площадка" maxLength={200} />
-              {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
-            </div>
-
             {/* Category */}
             <div className="space-y-2">
               <Label>Категория *</Label>
@@ -240,21 +291,57 @@ const CreateCampaign = () => {
               />
             </div>
 
-            {/* Short description */}
-            <div className="space-y-2">
-              <Label htmlFor="short_desc">Кратко описание *</Label>
-              <Textarea id="short_desc" value={shortDesc} onChange={e => setShortDesc(e.target.value)} placeholder="Кратко описание за картата на кампанията" rows={2} maxLength={300} />
-              <p className="text-xs text-muted-foreground">{shortDesc.length}/300</p>
-              {errors.short_description && <p className="text-sm text-destructive">{errors.short_description}</p>}
-            </div>
+            {/* Multilingual content tabs */}
+            <Tabs defaultValue="bg" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="bg">{t("form.langTab.bg")}</TabsTrigger>
+                <TabsTrigger value="en">{t("form.langTab.en")}</TabsTrigger>
+              </TabsList>
 
-            {/* Full description */}
-            <div className="space-y-2">
-              <Label htmlFor="description">Пълно описание *</Label>
-              <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Подробно описание на кампанията, цели, план за изпълнение..." rows={6} maxLength={10000} />
-              <p className="text-xs text-muted-foreground">{description.length}/10000</p>
-              {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-            </div>
+              <TabsContent value="bg" className="space-y-6 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Заглавие *</Label>
+                  <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Напр. Ремонт на детска площадка" maxLength={200} />
+                  {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="short_desc">Кратко описание *</Label>
+                  <Textarea id="short_desc" value={shortDesc} onChange={e => setShortDesc(e.target.value)} placeholder="Кратко описание за картата на кампанията" rows={2} maxLength={300} />
+                  <p className="text-xs text-muted-foreground">{shortDesc.length}/300</p>
+                  {errors.short_description && <p className="text-sm text-destructive">{errors.short_description}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Пълно описание *</Label>
+                  <Textarea id="description" value={description} onChange={e => setDescription(e.target.value)} placeholder="Подробно описание на кампанията, цели, план за изпълнение..." rows={6} maxLength={10000} />
+                  <p className="text-xs text-muted-foreground">{description.length}/10000</p>
+                  {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="en" className="space-y-4 pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">{t("form.translateHint")}</p>
+                  <Button type="button" variant="outline" size="sm" onClick={handleAutoTranslate} disabled={translating} className="gap-2 shrink-0">
+                    {translating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Languages className="h-4 w-4" />}
+                    {translating ? t("form.translating") : t("form.autoTranslate")}
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="title_en">{t("form.title_en")}</Label>
+                  <Input id="title_en" value={titleEn} onChange={e => setTitleEn(e.target.value)} maxLength={200} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="short_desc_en">{t("form.short_desc_en")}</Label>
+                  <Textarea id="short_desc_en" value={shortDescEn} onChange={e => setShortDescEn(e.target.value)} rows={2} maxLength={300} />
+                  <p className="text-xs text-muted-foreground">{shortDescEn.length}/300</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description_en">{t("form.description_en")}</Label>
+                  <Textarea id="description_en" value={descriptionEn} onChange={e => setDescriptionEn(e.target.value)} rows={6} maxLength={10000} />
+                  <p className="text-xs text-muted-foreground">{descriptionEn.length}/10000</p>
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {/* Target amount - only for one-time campaigns */}
             {!isRecurring && (
