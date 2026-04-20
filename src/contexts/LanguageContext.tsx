@@ -65,6 +65,11 @@ const translations: Translations = {
   "share.embedCopied": { bg: "Embed кодът е копиран!", en: "Embed code copied!" },
   "share.embedLabel": { bg: "Embed код (iframe)", en: "Embed code (iframe)" },
   "share.instagramHint": { bg: "Линкът е копиран! Споделете го в Instagram.", en: "Link copied! Share it on Instagram." },
+  "share.downloadStory": { bg: "Свали Story изображение", en: "Download Story image" },
+  "share.storyReady": { bg: "Story изображението е готово!", en: "Story image ready!" },
+  "share.storyDownloaded": { bg: "Story изображението е свалено", en: "Story image downloaded" },
+  "share.storyDownloadedDesc": { bg: "Качете го като Story в Instagram. Линкът е копиран в клипборда.", en: "Upload it as an Instagram Story. The link has been copied to your clipboard." },
+  "share.storyError": { bg: "Грешка при генериране на Story", en: "Failed to generate story image" },
 
   // Index / Home
   "index.heroTitle": { bg: "Заедно за Ботевград", en: "Together for Botevgrad" },
