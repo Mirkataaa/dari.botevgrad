@@ -18,6 +18,7 @@ const categoryKeyMap: Record<string, string> = {
   culture: "cat.culture",
   ecology: "cat.ecology",
   infrastructure: "cat.infrastructure",
+  sports: "cat.sports",
 };
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {

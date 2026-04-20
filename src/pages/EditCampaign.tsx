@@ -28,13 +28,14 @@ const categories: { value: CampaignCategory; label: string }[] = [
   { value: "culture", label: "Култура и традиции" },
   { value: "ecology", label: "Екология и животни" },
   { value: "infrastructure", label: "Инфраструктура и благоустройство" },
+  { value: "sports" as CampaignCategory, label: "Спорт" },
 ];
 
 const campaignSchemaOneTime = z.object({
   title: z.string().trim().min(5, "Заглавието трябва да е поне 5 символа").max(200),
   short_description: z.string().trim().min(10, "Краткото описание трябва да е поне 10 символа").max(300),
   description: z.string().trim().min(30, "Описанието трябва да е поне 30 символа").max(10000),
-  category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"]),
+  category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure", "sports"]),
   target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000),
   deadline: z.string().optional(),
 });
@@ -43,7 +44,7 @@ const campaignSchemaRecurring = z.object({
   title: z.string().trim().min(5, "Заглавието трябва да е поне 5 символа").max(200),
   short_description: z.string().trim().min(10, "Краткото описание трябва да е поне 10 символа").max(300),
   description: z.string().trim().min(30, "Описанието трябва да е поне 30 символа").max(10000),
-  category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"]),
+  category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure", "sports"]),
   target_amount: z.number().optional(),
   deadline: z.string().optional(),
 });

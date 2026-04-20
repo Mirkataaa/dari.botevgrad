@@ -25,13 +25,14 @@ const categories: { value: CampaignCategory; label: string }[] = [
   { value: "culture", label: "Култура и традиции" },
   { value: "ecology", label: "Екология и животни" },
   { value: "infrastructure", label: "Инфраструктура и благоустройство" },
+  { value: "sports" as CampaignCategory, label: "Спорт" },
 ];
 
 const campaignSchema = z.object({
   title: z.string().trim().min(5, "Заглавието трябва да е поне 5 символа").max(200, "Максимум 200 символа"),
   short_description: z.string().trim().min(10, "Краткото описание трябва да е поне 10 символа").max(300, "Максимум 300 символа"),
   description: z.string().trim().min(30, "Описанието трябва да е поне 30 символа").max(10000, "Максимум 10000 символа"),
-  category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure"], {
+  category: z.enum(["social", "healthcare", "education", "culture", "ecology", "infrastructure", "sports"], {
     required_error: "Изберете категория",
   }),
   target_amount: z.number().min(100, "Минимална сума: 100 €").max(1000000, "Максимална сума: 1 000 000 €").optional(),

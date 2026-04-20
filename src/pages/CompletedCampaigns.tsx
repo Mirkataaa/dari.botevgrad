@@ -7,15 +7,16 @@ import { useLanguage } from "@/contexts/LanguageContext";
 const CompletedCampaigns = () => {
   const { t } = useLanguage();
   const { data: campaigns = [], isLoading } = useCampaigns("completed");
-  const [filters, setFilters] = useState({ search: "", category: "all" });
+  const [filters, setFilters] = useState({ search: "", category: "all", recurringOnly: false });
 
-  const handleFilterChange = useCallback((f: { search: string; category: string }) => {
+  const handleFilterChange = useCallback((f: { search: string; category: string; recurringOnly: boolean }) => {
     setFilters(f);
   }, []);
 
   const filtered = useMemo(() => {
     return campaigns.filter((c) => {
       if (filters.category !== "all" && c.category !== filters.category) return false;
+      if (filters.recurringOnly && (c as any).campaign_type !== "recurring") return false;
       if (filters.search) {
         const q = filters.search.toLowerCase();
         if (!c.title.toLowerCase().includes(q) && !c.description.toLowerCase().includes(q)) return false;
