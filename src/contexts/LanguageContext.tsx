@@ -281,6 +281,19 @@ const translations: Translations = {
   // Common
   "common.error": { bg: "Грешка", en: "Error" },
   "common.loading": { bg: "Зареждане...", en: "Loading..." },
+
+  // Campaign form — multilingual
+  "form.langTab.bg": { bg: "Български", en: "Bulgarian" },
+  "form.langTab.en": { bg: "Английски (EN)", en: "English (EN)" },
+  "form.title_en": { bg: "Заглавие (EN)", en: "Title (EN)" },
+  "form.short_desc_en": { bg: "Кратко описание (EN)", en: "Short description (EN)" },
+  "form.description_en": { bg: "Пълно описание (EN)", en: "Full description (EN)" },
+  "form.autoTranslate": { bg: "Автоматичен превод", en: "Auto-translate" },
+  "form.translating": { bg: "Превеждане...", en: "Translating..." },
+  "form.translatedOk": { bg: "Преводът е готов — можете да го редактирате.", en: "Translation ready — you can edit it." },
+  "form.translateError": { bg: "Грешка при превода", en: "Translation error" },
+  "form.translateHint": { bg: "Попълнете българските полета и натиснете „Автоматичен превод“. Можете и да редактирате ръчно.", en: "Fill in the Bulgarian fields and press \"Auto-translate\". You can also edit manually." },
+  "form.translateBgFirst": { bg: "Първо попълнете българските полета.", en: "Please fill in the Bulgarian fields first." },
 };
 
 interface LanguageContextType {
