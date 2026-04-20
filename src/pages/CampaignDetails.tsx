@@ -82,6 +82,12 @@ const CampaignDetails = () => {
   const images = campaign.images || [];
   const hasActiveSub = mySubscription && (mySubscription.status === "active" || mySubscription.status === "cancelling");
 
+  // Localized content with fallback to BG
+  const displayTitle =
+    (language === "en" && (campaign as any).title_en) || campaign.title;
+  const displayDescription =
+    (language === "en" && (campaign as any).description_en) || campaign.description;
+
   return (
     <div className="container py-8 md:py-12">
       <Button asChild variant="ghost" size="sm" className="mb-6">
@@ -90,7 +96,7 @@ const CampaignDetails = () => {
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="space-y-8 lg:col-span-2">
-          <CampaignImageGallery images={images} title={campaign.title} />
+          <CampaignImageGallery images={images} title={displayTitle} />
 
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="secondary" className="gap-1">
@@ -107,7 +113,7 @@ const CampaignDetails = () => {
             {isClosed && <Badge className="bg-primary text-primary-foreground">{campaign.status === "closed" ? t("details.closed") : t("details.finished")}</Badge>}
           </div>
 
-          <h1 className="font-heading text-3xl font-bold md:text-4xl">{campaign.title}</h1>
+          <h1 className="font-heading text-3xl font-bold md:text-4xl">{displayTitle}</h1>
           {canEdit && (
             <Button asChild variant="outline" size="sm" className="gap-1 mt-2 w-fit">
               <Link to={`/campaign/${campaign.id}/edit`}>
@@ -115,7 +121,7 @@ const CampaignDetails = () => {
               </Link>
             </Button>
           )}
-          <p className="text-lg leading-relaxed text-muted-foreground">{campaign.description}</p>
+          <p className="text-lg leading-relaxed text-muted-foreground whitespace-pre-wrap">{displayDescription}</p>
 
           {campaign.documents && campaign.documents.length > 0 && (
             <>
@@ -175,12 +181,12 @@ const CampaignDetails = () => {
                       {t("details.cancelSub")}
                     </Button>
                   )}
-                  <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
+                  <ShareWidget campaignId={campaign.id} campaignTitle={displayTitle} campaignImage={images[0]} />
                 </div>
               ) : (
                 <div className="flex gap-3">
-                  <DonateButton campaignId={campaign.id} campaignTitle={campaign.title} disabled={isClosed} isRecurring={isRecurring} />
-                  <ShareWidget campaignId={campaign.id} campaignTitle={campaign.title} campaignImage={images[0]} />
+                  <DonateButton campaignId={campaign.id} campaignTitle={displayTitle} disabled={isClosed} isRecurring={isRecurring} />
+                  <ShareWidget campaignId={campaign.id} campaignTitle={displayTitle} campaignImage={images[0]} />
                 </div>
               )}
 
