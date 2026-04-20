@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Search, X, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const categoryKeys = [
@@ -12,23 +12,31 @@ const categoryKeys = [
   { value: "culture", key: "cat.culture" },
   { value: "ecology", key: "cat.ecology" },
   { value: "infrastructure", key: "cat.infrastructure" },
+  { value: "sports", key: "cat.sports" },
 ];
 
+export interface CampaignFilterState {
+  search: string;
+  category: string;
+  recurringOnly: boolean;
+}
+
 interface Props {
-  onFilterChange: (filters: { search: string; category: string }) => void;
+  onFilterChange: (filters: CampaignFilterState) => void;
 }
 
 const CampaignFilters = ({ onFilterChange }: Props) => {
   const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [recurringOnly, setRecurringOnly] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      onFilterChange({ search, category });
+      onFilterChange({ search, category, recurringOnly });
     }, 300);
     return () => clearTimeout(timeout);
-  }, [search, category, onFilterChange]);
+  }, [search, category, recurringOnly, onFilterChange]);
 
   return (
     <div className="space-y-4">
@@ -60,6 +68,15 @@ const CampaignFilters = ({ onFilterChange }: Props) => {
             {t(c.key)}
           </Button>
         ))}
+        <Button
+          variant={recurringOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setRecurringOnly((v) => !v)}
+          className="gap-1"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          {t("filters.recurring")}
+        </Button>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, X, Search, Lock, Star, Play, Eye, Trash2, FileEdit } from "lucide-react";
+import { Check, X, Search, Lock, Star, Play, Eye, Trash2, FileEdit, Archive, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ const statusLabels: Record<string, string> = {
   completed: "Завършена",
   rejected: "Отхвърлена",
   closed: "Приключена",
+  archived: "Архивирана",
 };
 
 const statusColors: Record<string, string> = {
@@ -36,6 +37,7 @@ const statusColors: Record<string, string> = {
   completed: "bg-blue-100 text-blue-800",
   rejected: "bg-red-100 text-red-800",
   closed: "bg-purple-100 text-purple-800",
+  archived: "bg-gray-200 text-gray-700",
 };
 
 const categoryLabels: Record<string, string> = {
@@ -45,14 +47,17 @@ const categoryLabels: Record<string, string> = {
   culture: "Култура",
   ecology: "Екология",
   infrastructure: "Инфраструктура",
+  sports: "Спорт",
 };
 
 const AdminCampaigns = () => {
   const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [donationCounts, setDonationCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [recurringOnly, setRecurringOnly] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -61,7 +66,25 @@ const AdminCampaigns = () => {
       .from("campaigns")
       .select("*")
       .order("created_at", { ascending: false });
-    if (!error) setCampaigns(data || []);
+    if (!error) {
+      const list = data || [];
+      setCampaigns(list);
+
+      // Fetch completed-donation counts per campaign in one query
+      const ids = list.map((c: any) => c.id);
+      if (ids.length > 0) {
+        const { data: donations } = await supabase
+          .from("donations")
+          .select("campaign_id, status")
+          .in("campaign_id", ids)
+          .eq("status", "completed");
+        const counts: Record<string, number> = {};
+        (donations || []).forEach((d: any) => {
+          counts[d.campaign_id] = (counts[d.campaign_id] || 0) + 1;
+        });
+        setDonationCounts(counts);
+      }
+    }
     setLoading(false);
   };
 
@@ -91,7 +114,16 @@ const AdminCampaigns = () => {
     }
   };
 
+  const archiveCampaign = async (id: string) => {
+    await updateStatus(id, "archived");
+  };
+
   const deleteCampaign = async (campaign: any) => {
+    // Safety check: never delete a campaign with completed donations
+    if ((donationCounts[campaign.id] || 0) > 0) {
+      toast({ variant: "destructive", title: "Не може да се изтрие", description: "Кампанията има дарения. Използвайте архивиране." });
+      return;
+    }
     // Delete storage files first
     const buckets = [
       { bucket: "campaign-images", files: campaign.images },
@@ -134,13 +166,14 @@ const AdminCampaigns = () => {
     return campaigns.filter((c) => {
       if (filter !== "all" && c.status !== filter) return false;
       if (categoryFilter !== "all" && c.category !== categoryFilter) return false;
+      if (recurringOnly && c.campaign_type !== "recurring") return false;
       if (search) {
         const q = search.toLowerCase();
         if (!c.title.toLowerCase().includes(q) && !c.description.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [campaigns, filter, categoryFilter, search]);
+  }, [campaigns, filter, categoryFilter, recurringOnly, search]);
 
   if (loading) {
     return (
@@ -188,7 +221,7 @@ const AdminCampaigns = () => {
       </div>
 
       <div className="mb-2 flex flex-wrap gap-2">
-        {["all", "pending", "active", "completed", "rejected", "closed"].map((f) => (
+        {["all", "pending", "active", "completed", "rejected", "closed", "archived"].map((f) => (
           <Button key={f} variant={filter === f ? "default" : "outline"} size="sm" onClick={() => setFilter(f)}>
             {f === "all" ? "Всички" : statusLabels[f]}
             {f !== "all" && <span className="ml-1 text-xs">({campaigns.filter((c) => c.status === f).length})</span>}
@@ -196,7 +229,7 @@ const AdminCampaigns = () => {
         ))}
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-2 flex flex-wrap gap-2">
         {["all", ...Object.keys(categoryLabels)].map((c) => (
           <Button key={c} variant={categoryFilter === c ? "secondary" : "ghost"} size="sm" onClick={() => setCategoryFilter(c)}>
             {c === "all" ? "Всички категории" : categoryLabels[c]}
@@ -204,19 +237,38 @@ const AdminCampaigns = () => {
         ))}
       </div>
 
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Button
+          variant={recurringOnly ? "default" : "outline"}
+          size="sm"
+          onClick={() => setRecurringOnly((v) => !v)}
+          className="gap-1"
+        >
+          <RefreshCw className="h-3.5 w-3.5" /> Само периодични
+        </Button>
+      </div>
+
       {filtered.length === 0 ? (
         <p className="py-10 text-center text-muted-foreground">Няма кампании</p>
       ) : (
         <div className="space-y-3">
-          {filtered.map((campaign) => (
+          {filtered.map((campaign) => {
+            const donCount = donationCounts[campaign.id] || 0;
+            const canDelete = donCount === 0;
+            return (
             <Card key={campaign.id}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h3 className="font-semibold truncate">{campaign.title}</h3>
                     <Badge className={statusColors[campaign.status] || "bg-gray-100 text-gray-800"} variant="secondary">
                       {statusLabels[campaign.status] || campaign.status}
                     </Badge>
+                    {campaign.campaign_type === "recurring" && (
+                      <Badge variant="outline" className="gap-1">
+                        <RefreshCw className="h-3 w-3" /> Периодична
+                      </Badge>
+                    )}
                     {campaign.is_recommended && (
                       <Badge className="bg-yellow-100 text-yellow-800" variant="secondary">
                         <Star className="mr-1 h-3 w-3" /> Препоръчана
@@ -224,7 +276,7 @@ const AdminCampaigns = () => {
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {categoryLabels[campaign.category] || campaign.category} · {Number(campaign.current_amount).toLocaleString("bg-BG")} / {Number(campaign.target_amount).toLocaleString("bg-BG")} €
+                    {categoryLabels[campaign.category] || campaign.category} · {Number(campaign.current_amount).toLocaleString("bg-BG")} / {Number(campaign.target_amount).toLocaleString("bg-BG")} € · {donCount} {donCount === 1 ? "дарение" : "дарения"}
                   </p>
                 </div>
 
@@ -260,37 +312,70 @@ const AdminCampaigns = () => {
                       <Lock className="mr-1 h-4 w-4" /> Приключи
                     </Button>
                   )}
-                  {(campaign.status === "closed" || campaign.status === "completed") && (
+                  {(campaign.status === "closed" || campaign.status === "completed" || campaign.status === "archived") && (
                     <Button size="sm" variant="outline" onClick={() => updateStatus(campaign.id, "active")}>
                       <Play className="mr-1 h-4 w-4" /> Отвори отново
                     </Button>
                   )}
 
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Изтриване на кампания</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Сигурни ли сте, че искате да изтриете "{campaign.title}"? Това действие е необратимо и ще премахне всички свързани файлове.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Отказ</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => deleteCampaign(campaign)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Изтрий
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {/* Archive (replaces delete when donations exist) */}
+                  {campaign.status !== "archived" && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="outline" className="gap-1">
+                          <Archive className="h-4 w-4" /> Архивирай
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Архивиране на кампания</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Кампанията „{campaign.title}“ ще бъде скрита от публичните листинги. Всички данни (дарения, история) ще бъдат запазени и могат да се възстановят по-късно.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Отказ</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => archiveCampaign(campaign.id)}>
+                            Архивирай
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+
+                  {/* Delete only when no donations */}
+                  {canDelete ? (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Изтриване на кампания</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Сигурни ли сте, че искате да изтриете "{campaign.title}"? Това действие е необратимо и ще премахне всички свързани файлове.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Отказ</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteCampaign(campaign)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Изтрий
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  ) : (
+                    <Button size="sm" variant="ghost" className="text-muted-foreground" disabled title="Кампанията има дарения и не може да бъде изтрита">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

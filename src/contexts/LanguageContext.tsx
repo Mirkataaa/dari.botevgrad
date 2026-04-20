@@ -100,6 +100,11 @@ const translations: Translations = {
   "cat.culture": { bg: "Култура и традиции", en: "Culture & Traditions" },
   "cat.ecology": { bg: "Екология и животни", en: "Ecology & Animals" },
   "cat.infrastructure": { bg: "Инфраструктура", en: "Infrastructure" },
+  "cat.sports": { bg: "Спорт", en: "Sports" },
+
+  // Campaign type filters
+  "filters.recurring": { bg: "Периодични", en: "Recurring" },
+  "filters.allTypes": { bg: "Всички видове", en: "All types" },
 
   // Campaign card
   "card.completed": { bg: "Приключила", en: "Completed" },

@@ -793,6 +793,7 @@ export type Database = {
         | "culture"
         | "ecology"
         | "infrastructure"
+        | "sports"
       campaign_status:
         | "pending"
         | "active"
@@ -800,6 +801,7 @@ export type Database = {
         | "rejected"
         | "stopped"
         | "closed"
+        | "archived"
       campaign_type: "one_time" | "recurring"
     }
     CompositeTypes: {
@@ -936,6 +938,7 @@ export const Constants = {
         "culture",
         "ecology",
         "infrastructure",
+        "sports",
       ],
       campaign_status: [
         "pending",
@@ -944,6 +947,7 @@ export const Constants = {
         "rejected",
         "stopped",
         "closed",
+        "archived",
       ],
       campaign_type: ["one_time", "recurring"],
     },
