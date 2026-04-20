@@ -17,7 +17,7 @@ const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID as string;
 
 const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default" }: Props) => {
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
 
@@ -27,7 +27,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   // and 302-redirects normal users back to siteUrl. Use this URL when posting
   // to social networks so previews always work.
   const shareUrl = PROJECT_ID
-    ? `https://${PROJECT_ID}.supabase.co/functions/v1/og-preview/${campaignId}?origin=${encodeURIComponent(window.location.origin)}`
+    ? `https://${PROJECT_ID}.supabase.co/functions/v1/og-preview/${campaignId}?origin=${encodeURIComponent(window.location.origin)}&lang=${language}`
     : siteUrl;
   const encodedShareUrl = encodeURIComponent(shareUrl);
 
