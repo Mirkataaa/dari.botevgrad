@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaign } from "@/hooks/useCampaigns";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ImagePlus, X, Loader2, FileUp, Video, Star, AlertTriangle } from "lucide-react";
+import { ImagePlus, X, Loader2, FileUp, Video, Star, AlertTriangle, Languages } from "lucide-react";
 import { z } from "zod";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -50,6 +52,7 @@ const EditCampaign = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: campaign, isLoading } = useCampaign(id || "");
@@ -57,6 +60,10 @@ const EditCampaign = () => {
   const [title, setTitle] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [description, setDescription] = useState("");
+  const [titleEn, setTitleEn] = useState("");
+  const [shortDescEn, setShortDescEn] = useState("");
+  const [descriptionEn, setDescriptionEn] = useState("");
+  const [translating, setTranslating] = useState(false);
   const [category, setCategory] = useState<CampaignCategory | "">("");
   const [targetAmount, setTargetAmount] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -108,6 +115,9 @@ const EditCampaign = () => {
       setTitle(campaign.title);
       setShortDesc(campaign.short_description || "");
       setDescription(campaign.description);
+      setTitleEn((campaign as any).title_en || "");
+      setShortDescEn((campaign as any).short_description_en || "");
+      setDescriptionEn((campaign as any).description_en || "");
       setCategory(campaign.category);
       setTargetAmount(String(campaign.target_amount));
       setDeadline(campaign.deadline ? new Date(campaign.deadline).toISOString().split("T")[0] : "");
@@ -117,6 +127,32 @@ const EditCampaign = () => {
       setMainImageIndex((campaign as any).main_image_index || 0);
     }
   }, [campaign]);
+
+  const handleAutoTranslate = async () => {
+    if (!title.trim() && !shortDesc.trim() && !description.trim()) {
+      toast({ variant: "destructive", title: t("form.translateBgFirst") });
+      return;
+    }
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("translate-campaign", {
+        body: {
+          title: title.trim() || undefined,
+          short_description: shortDesc.trim() || undefined,
+          description: description.trim() || undefined,
+        },
+      });
+      if (error) throw error;
+      if (data?.title_en) setTitleEn(data.title_en);
+      if (data?.short_description_en) setShortDescEn(data.short_description_en);
+      if (data?.description_en) setDescriptionEn(data.description_en);
+      toast({ title: t("form.translatedOk") });
+    } catch (err: any) {
+      toast({ variant: "destructive", title: t("form.translateError"), description: err.message });
+    } finally {
+      setTranslating(false);
+    }
+  };
 
   if (isLoading) {
     return (
