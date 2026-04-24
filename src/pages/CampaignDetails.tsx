@@ -12,6 +12,7 @@ import CampaignComments from "@/components/campaigns/CampaignComments";
 import CampaignUpdates from "@/components/campaigns/CampaignUpdates";
 import CampaignImageGallery from "@/components/campaigns/CampaignImageGallery";
 import CampaignDocuments from "@/components/campaigns/CampaignDocuments";
+import CampaignVideos from "@/components/campaigns/CampaignVideos";
 import DonateButton from "@/components/campaigns/DonateButton";
 import ShareWidget from "@/components/campaigns/ShareWidget";
 import { useCampaign, useDonations } from "@/hooks/useCampaigns";
@@ -135,6 +136,13 @@ const CampaignDetails = () => {
             <>
               <Separator />
               <CampaignDocuments documents={campaign.documents} />
+            </>
+          )}
+
+          {(campaign as any).videos && (campaign as any).videos.length > 0 && (
+            <>
+              <Separator />
+              <CampaignVideos videos={(campaign as any).videos} />
             </>
           )}
 

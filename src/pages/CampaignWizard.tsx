@@ -92,7 +92,7 @@ const CampaignWizard = () => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [documents, setDocuments] = useState<File[]>([]);
-  const [videoUrls, setVideoUrls] = useState<string[]>([""]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -199,10 +199,27 @@ const CampaignWizard = () => {
   };
   const removeDocument = (i: number) => setDocuments((p) => p.filter((_, idx) => idx !== i));
 
-  const handleVideoUrlChange = (i: number, v: string) =>
-    setVideoUrls((p) => p.map((u, idx) => (idx === i ? v : u)));
-  const addVideoUrl = () => videoUrls.length < 3 && setVideoUrls((p) => [...p, ""]);
-  const removeVideoUrl = (i: number) => setVideoUrls((p) => p.filter((_, idx) => idx !== i));
+  const handleVideoAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (videoFiles.length + files.length > 3) {
+      toast({ variant: "destructive", title: "Максимум 3 видеоклипа" });
+      return;
+    }
+    const valid = files.filter((f) => {
+      if (!f.type.startsWith("video/")) {
+        toast({ variant: "destructive", title: `${f.name} не е видео файл` });
+        return false;
+      }
+      if (f.size > 100 * 1024 * 1024) {
+        toast({ variant: "destructive", title: `${f.name} е твърде голям (макс. 100MB)` });
+        return false;
+      }
+      return true;
+    });
+    setVideoFiles((p) => [...p, ...valid]);
+    e.target.value = "";
+  };
+  const removeVideo = (i: number) => setVideoFiles((p) => p.filter((_, idx) => idx !== i));
 
   // ---------- Translate ----------
   const handleAutoTranslate = async () => {
@@ -277,12 +294,13 @@ const CampaignWizard = () => {
         }
       }
 
-      const [imageUrls, docUrls] = await Promise.all([
+      const [imageUrls, docUrls, videoUploadedUrls] = await Promise.all([
         images.length > 0 ? uploadFiles(images, "campaign-images") : Promise.resolve([]),
         documents.length > 0 ? uploadFiles(documents, "campaign-documents") : Promise.resolve([]),
+        videoFiles.length > 0 ? uploadFiles(videoFiles, "campaign-videos") : Promise.resolve([]),
       ]);
 
-      const cleanVideoUrls = videoUrls.filter((v) => v.trim().length > 0);
+      const cleanVideoUrls = videoUploadedUrls;
 
       const { error } = await supabase.from("campaigns").insert({
         title: title.trim(),
@@ -593,28 +611,24 @@ const CampaignWizard = () => {
 
               <div className="space-y-2">
                 <Label>Видео клипове (до 3, по избор)</Label>
-                <p className="text-xs text-muted-foreground">Линкове към YouTube или друга видео платформа.</p>
+                <p className="text-xs text-muted-foreground">Качете видео файлове от компютъра си (макс. 100MB всеки).</p>
                 <div className="space-y-2">
-                  {videoUrls.map((url, i) => (
-                    <div key={i} className="flex items-center gap-2">
+                  {videoFiles.map((file, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg border px-3 py-2">
                       <Video className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <Input
-                        value={url}
-                        onChange={(e) => handleVideoUrlChange(i, e.target.value)}
-                        placeholder="https://www.youtube.com/watch?v=..."
-                        className="flex-1"
-                      />
-                      {videoUrls.length > 1 && (
-                        <button type="button" onClick={() => removeVideoUrl(i)} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
+                      <span className="text-sm truncate flex-1">{file.name}</span>
+                      <span className="text-xs text-muted-foreground shrink-0">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                      <button type="button" onClick={() => removeVideo(i)} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
+                        <X className="h-3 w-3" />
+                      </button>
                     </div>
                   ))}
-                  {videoUrls.length < 3 && (
-                    <Button type="button" variant="outline" size="sm" onClick={addVideoUrl} className="gap-1">
-                      <Video className="h-4 w-4" /> Добави видео линк
-                    </Button>
+                  {videoFiles.length < 3 && (
+                    <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-3 text-muted-foreground transition-colors hover:border-primary hover:text-primary">
+                      <Video className="h-5 w-5" />
+                      <span className="text-sm">Добави видео файл</span>
+                      <input type="file" accept="video/*" multiple className="hidden" onChange={handleVideoAdd} />
+                    </label>
                   )}
                 </div>
               </div>
@@ -644,7 +658,7 @@ const CampaignWizard = () => {
                 )}
                 <ReviewRow label="Снимки" value={`${images.length} (главна #${mainImageIndex + 1})`} />
                 <ReviewRow label="Документи" value={String(documents.length)} />
-                <ReviewRow label="Видео" value={String(videoUrls.filter((v) => v.trim()).length)} />
+                <ReviewRow label="Видео" value={String(videoFiles.length)} />
               </div>
 
               {imagePreviews.length > 0 && (

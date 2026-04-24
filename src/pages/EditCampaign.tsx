@@ -73,7 +73,8 @@ const EditCampaign = () => {
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [existingDocs, setExistingDocs] = useState<string[]>([]);
   const [newDocs, setNewDocs] = useState<File[]>([]);
-  const [videoUrls, setVideoUrls] = useState<string[]>([""]);
+  const [existingVideos, setExistingVideos] = useState<string[]>([]);
+  const [newVideos, setNewVideos] = useState<File[]>([]);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -124,7 +125,7 @@ const EditCampaign = () => {
       setDeadline(campaign.deadline ? new Date(campaign.deadline).toISOString().split("T")[0] : "");
       setExistingImages(campaign.images || []);
       setExistingDocs(campaign.documents || []);
-      setVideoUrls(campaign.videos?.length ? campaign.videos : [""]);
+      setExistingVideos(campaign.videos || []);
       setMainImageIndex((campaign as any).main_image_index || 0);
     }
   }, [campaign]);
@@ -221,8 +222,19 @@ const EditCampaign = () => {
     e.target.value = "";
   };
 
-  const handleVideoUrlChange = (index: number, value: string) => {
-    setVideoUrls(prev => prev.map((v, i) => i === index ? value : v));
+  const handleVideoAdd = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (existingVideos.length + newVideos.length + files.length > 3) {
+      toast({ variant: "destructive", title: "Максимум 3 видеоклипа" });
+      return;
+    }
+    const validFiles = files.filter(f => {
+      if (!f.type.startsWith("video/")) { toast({ variant: "destructive", title: `${f.name} не е видео файл` }); return false; }
+      if (f.size > 100 * 1024 * 1024) { toast({ variant: "destructive", title: `${f.name} е твърде голям (макс. 100MB)` }); return false; }
+      return true;
+    });
+    setNewVideos(prev => [...prev, ...validFiles]);
+    e.target.value = "";
   };
 
   const uploadFiles = async (files: File[], bucket: string): Promise<string[]> => {
@@ -282,14 +294,15 @@ const EditCampaign = () => {
         }
       }
 
-      const [newImageUrls, newDocUrls] = await Promise.all([
+      const [newImageUrls, newDocUrls, newVideoUrls] = await Promise.all([
         newImages.length > 0 ? uploadFiles(newImages, "campaign-images") : Promise.resolve([]),
         newDocs.length > 0 ? uploadFiles(newDocs, "campaign-documents") : Promise.resolve([]),
+        newVideos.length > 0 ? uploadFiles(newVideos, "campaign-videos") : Promise.resolve([]),
       ]);
 
       const allImageUrls = [...existingImages, ...newImageUrls];
       const allDocUrls = [...existingDocs, ...newDocUrls];
-      const cleanVideoUrls = videoUrls.filter(v => v.trim().length > 0);
+      const cleanVideoUrls = [...existingVideos, ...newVideoUrls];
 
       if (isAdmin) {
         // Admins can directly update
@@ -520,22 +533,36 @@ const EditCampaign = () => {
             {/* Videos */}
             <div className="space-y-2">
               <Label>Видео клипове (до 3)</Label>
+              <p className="text-xs text-muted-foreground">Качете видео файлове от компютъра си (макс. 100MB всеки).</p>
               <div className="space-y-2">
-                {videoUrls.map((url, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Video className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <Input value={url} onChange={e => handleVideoUrlChange(i, e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="flex-1" />
-                    {videoUrls.length > 1 && (
-                      <button type="button" onClick={() => setVideoUrls(prev => prev.filter((_, idx) => idx !== i))} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
+                {existingVideos.map((url, i) => {
+                  const name = decodeURIComponent(url.split("/").pop() || "Видео");
+                  const isYouTube = /youtube\.com|youtu\.be|vimeo\.com/i.test(url);
+                  return (
+                    <div key={`existing-${i}`} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                      <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm truncate flex-1">{isYouTube ? url : name}</span>
+                      <button type="button" onClick={() => setExistingVideos(prev => prev.filter((_, idx) => idx !== i))} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
                         <X className="h-3 w-3" />
                       </button>
-                    )}
+                    </div>
+                  );
+                })}
+                {newVideos.map((file, i) => (
+                  <div key={`new-${i}`} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                    <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm truncate flex-1">{file.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                    <button type="button" onClick={() => setNewVideos(prev => prev.filter((_, idx) => idx !== i))} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
+                      <X className="h-3 w-3" />
+                    </button>
                   </div>
                 ))}
-                {videoUrls.length < 3 && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setVideoUrls(prev => [...prev, ""])} className="gap-1">
-                    <Video className="h-4 w-4" /> Добави видео
-                  </Button>
+                {existingVideos.length + newVideos.length < 3 && (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-3 text-muted-foreground hover:border-primary hover:text-primary">
+                    <Video className="h-5 w-5" /><span className="text-sm">Добави видео файл</span>
+                    <input type="file" accept="video/*" multiple className="hidden" onChange={handleVideoAdd} />
+                  </label>
                 )}
               </div>
             </div>
