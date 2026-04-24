@@ -105,8 +105,8 @@ const Profile = () => {
   const pendingDraftCampaignIds = new Set(myPendingDrafts.map((d: any) => d.campaign_id));
   const reviewNotificationsCount = (notifications?.approvedItems || 0) + (notifications?.rejectedItems || 0);
 
-  useRealtimeSync("donations", [["my-donations", user?.id || ""]]);
-  useRealtimeSync("subscriptions", [["my-subscriptions", user?.id || ""]]);
+  // Donations/subscriptions realtime channels are admin-only.
+  // Profile data refreshes on window focus and after cancel mutations.
 
   useEffect(() => {
     if (profile) {
