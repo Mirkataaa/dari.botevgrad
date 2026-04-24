@@ -115,8 +115,13 @@ const Header = () => {
                         {t("nav.admin")}
                       </DropdownMenuItem>
                     )}
-                    {(isAdmin || canCreate) && (
+                    {(isAdmin || canCreate) ? (
                       <DropdownMenuItem onClick={() => navigate("/campaigns/create")}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        {t("nav.createCampaign")}
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem onClick={() => navigate("/campaigns/wizard")}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         {t("nav.createCampaign")}
                       </DropdownMenuItem>
