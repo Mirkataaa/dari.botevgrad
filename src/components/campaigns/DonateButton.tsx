@@ -127,7 +127,7 @@ const DonateButton = ({ campaignId, campaignTitle, disabled, isRecurring }: Prop
             </div>
           )}
 
-          {!isRecurring && (
+          {!isRecurring && user && (
             <div className="flex items-center gap-2">
               <Checkbox id="anonymous" checked={isAnonymous} onCheckedChange={(c) => setIsAnonymous(c === true)} />
               <Label htmlFor="anonymous" className="text-sm font-normal">{t("donate.anonymous")}</Label>
