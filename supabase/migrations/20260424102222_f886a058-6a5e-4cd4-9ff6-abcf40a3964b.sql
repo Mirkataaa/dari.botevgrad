@@ -1,0 +1,1 @@
+drop policy if exists "Campaign videos are publicly readable" on storage.objects;
