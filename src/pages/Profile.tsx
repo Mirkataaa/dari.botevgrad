@@ -35,7 +35,6 @@ const Profile = () => {
   const highlightCampaignId = searchParams.get("highlight");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -112,7 +111,6 @@ const Profile = () => {
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || "");
-      setPhone(profile.phone || "");
       setAvatarUrl(profile.avatar_url || "");
     }
   }, [profile]);
@@ -152,7 +150,7 @@ const Profile = () => {
 
   const handleSaveProfile = async () => {
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ full_name: fullName.trim(), phone: phone.trim(), avatar_url: avatarUrl }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ full_name: fullName.trim(), avatar_url: avatarUrl }).eq("id", user.id);
     setSaving(false);
     if (error) { toast({ variant: "destructive", title: t("common.error"), description: error.message }); }
     else { queryClient.invalidateQueries({ queryKey: ["profile", user.id] }); toast({ title: t("profile.profileUpdated") }); }
@@ -199,10 +197,6 @@ const Profile = () => {
             <div className="space-y-1">
               <Label htmlFor="fullName">{t("profile.name")}</Label>
               <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="phone">{t("profile.phone")}</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+359..." />
             </div>
             <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

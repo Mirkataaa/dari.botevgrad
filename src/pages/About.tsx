@@ -19,6 +19,7 @@ const About = () => {
   const { toast } = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
@@ -51,14 +52,18 @@ const About = () => {
       return;
     }
     setSending(true);
+    const trimmedPhone = phone.trim();
+    const messageWithPhone = trimmedPhone
+      ? `${message.trim()}\n\n---\n${t("about.phoneLabel")}: ${trimmedPhone}`
+      : message.trim();
     const { error } = await supabase.from("contact_messages").insert({
-      name: name.trim(), email: email.trim(), message: message.trim(),
+      name: name.trim(), email: email.trim(), message: messageWithPhone,
     });
     setSending(false);
     if (error) {
       toast({ variant: "destructive", title: t("common.error"), description: error.message });
     } else {
-      setName(""); setEmail(""); setMessage("");
+      setName(""); setEmail(""); setPhone(""); setMessage("");
       toast({ title: t("about.sent"), description: t("about.sentDesc") });
     }
   };
@@ -188,6 +193,10 @@ const About = () => {
                 <Label htmlFor="contact-email">{t("about.emailLabel")} *</Label>
                 <Input id="contact-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@example.com" maxLength={255} />
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="contact-phone">{t("about.phoneLabel")} ({t("about.optional")})</Label>
+              <Input id="contact-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+359..." maxLength={32} />
             </div>
             <div className="space-y-1">
               <Label htmlFor="contact-msg">{t("about.messageLabel")} *</Label>
