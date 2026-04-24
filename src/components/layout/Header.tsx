@@ -92,6 +92,12 @@ const Header = () => {
             <>
               {user ? (
                 <>
+                <Button size="sm" asChild className="ml-2">
+                  <Link to="/campaigns/wizard">
+                    <PlusCircle className="mr-1.5 h-4 w-4" />
+                    {t("nav.createCampaign")}
+                  </Link>
+                </Button>
                 <NotificationBell />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -110,21 +116,16 @@ const Header = () => {
                       {user.email}
                     </DropdownMenuItem>
                     {isAdmin && (
-                      <DropdownMenuItem onClick={() => navigate("/admin")}>
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                        {t("nav.admin")}
-                      </DropdownMenuItem>
-                    )}
-                    {(isAdmin || canCreate) ? (
-                      <DropdownMenuItem onClick={() => navigate("/campaigns/create")}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {t("nav.createCampaign")}
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem onClick={() => navigate("/campaigns/wizard")}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        {t("nav.createCampaign")}
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem onClick={() => navigate("/admin")}>
+                          <ShieldCheck className="mr-2 h-4 w-4" />
+                          {t("nav.admin")}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/campaigns/create")}>
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          {t("nav.createCampaign")}
+                        </DropdownMenuItem>
+                      </>
                     )}
                     <DropdownMenuItem onClick={() => navigate("/profile")}>
                       <User className="mr-2 h-4 w-4" />
@@ -209,6 +210,13 @@ const Header = () => {
                         <ShieldCheck className="mr-2 h-4 w-4" /> {t("nav.admin")}
                       </Link>
                     )}
+                    <Link
+                      to="/campaigns/wizard"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> {t("nav.createCampaign")}
+                    </Link>
                     <Link
                       to="/profile"
                       onClick={() => setMobileOpen(false)}
