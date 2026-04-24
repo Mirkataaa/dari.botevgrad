@@ -43,7 +43,7 @@ const CreateCampaign = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  
 
   const [title, setTitle] = useState("");
   const [shortDesc, setShortDesc] = useState("");
