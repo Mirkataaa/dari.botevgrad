@@ -172,27 +172,6 @@ const CreateCampaign = () => {
 
     setSubmitting(true);
     try {
-      // If user did not run translate, do it silently before insert (best-effort)
-      let finalTitleEn = titleEn.trim();
-      let finalShortEn = shortDescEn.trim();
-      let finalDescEn = descriptionEn.trim();
-      if (!finalTitleEn && !finalShortEn && !finalDescEn) {
-        try {
-          const { data } = await supabase.functions.invoke("translate-campaign", {
-            body: {
-              title: parsed.data.title,
-              short_description: parsed.data.short_description,
-              description: parsed.data.description,
-            },
-          });
-          if (data?.title_en) finalTitleEn = data.title_en;
-          if (data?.short_description_en) finalShortEn = data.short_description_en;
-          if (data?.description_en) finalDescEn = data.description_en;
-        } catch (e) {
-          console.warn("Auto-translate on submit failed (non-blocking)", e);
-        }
-      }
-
       const [imageUrls, docUrls, videoUploadedUrls] = await Promise.all([
         images.length > 0 ? uploadFiles(images, "campaign-images") : Promise.resolve([]),
         documents.length > 0 ? uploadFiles(documents, "campaign-documents") : Promise.resolve([]),
@@ -205,9 +184,6 @@ const CreateCampaign = () => {
         title: parsed.data.title,
         short_description: parsed.data.short_description,
         description: parsed.data.description,
-        title_en: finalTitleEn || null,
-        short_description_en: finalShortEn || null,
-        description_en: finalDescEn || null,
         category: parsed.data.category,
         target_amount: isRecurring ? 0 : Number(targetAmount),
         deadline: isRecurring ? null : (parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null),
