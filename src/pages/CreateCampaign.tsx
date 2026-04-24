@@ -48,9 +48,6 @@ const CreateCampaign = () => {
   const [title, setTitle] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [description, setDescription] = useState("");
-  const [titleEn, setTitleEn] = useState("");
-  const [shortDescEn, setShortDescEn] = useState("");
-  const [descriptionEn, setDescriptionEn] = useState("");
   const [translating, setTranslating] = useState(false);
   const [category, setCategory] = useState<CampaignCategory | "">("");
   const [targetAmount, setTargetAmount] = useState("");
