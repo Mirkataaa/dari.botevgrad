@@ -185,7 +185,7 @@ const Profile = () => {
                 {avatarUrl && <AvatarImage src={avatarUrl} />}
                 <AvatarFallback className="text-lg">{(fullName || user.email || "?")[0].toUpperCase()}</AvatarFallback>
               </Avatar>
-              <div className="flex-1 space-y-2">
+              <div className="flex-1 space-y-3">
                 <Label>{t("profile.profilePhoto")}</Label>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                 <Button type="button" variant="outline" size="sm" disabled={uploading} onClick={() => fileInputRef.current?.click()}>
