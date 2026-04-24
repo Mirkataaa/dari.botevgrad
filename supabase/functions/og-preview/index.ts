@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     const { data: campaign } = await supabase
       .from("campaigns")
       .select(
-        "id, title, title_en, short_description, short_description_en, description, description_en, images, main_image_index, current_amount, target_amount, deadline"
+        "id, title, short_description, description, images, main_image_index, current_amount, target_amount, deadline"
       )
       .eq("id", campaignId)
       .maybeSingle();
@@ -155,13 +155,9 @@ Deno.serve(async (req) => {
       (campaign.images && (campaign.images[mainIdx] || campaign.images[0])) ||
       `${siteOrigin}/placeholder.svg`;
 
-    const title =
-      (lang === "en" && (campaign as any).title_en) || campaign.title;
-    const shortDesc =
-      (lang === "en" && (campaign as any).short_description_en) ||
-      campaign.short_description;
-    const fullDesc =
-      (lang === "en" && (campaign as any).description_en) || campaign.description;
+    const title = campaign.title;
+    const shortDesc = campaign.short_description;
+    const fullDesc = campaign.description;
 
     const description =
       shortDesc ||
