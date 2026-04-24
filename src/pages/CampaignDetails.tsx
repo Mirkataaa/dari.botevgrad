@@ -91,11 +91,8 @@ const CampaignDetails = () => {
   const images = campaign.images || [];
   const hasActiveSub = mySubscription && (mySubscription.status === "active" || mySubscription.status === "cancelling");
 
-  // Localized content with fallback to BG
-  const displayTitle =
-    (language === "en" && (campaign as any).title_en) || campaign.title;
-  const displayDescription =
-    (language === "en" && (campaign as any).description_en) || campaign.description;
+  const displayTitle = campaign.title;
+  const displayDescription = campaign.description;
 
   return (
     <div className="container py-8 md:py-12">
