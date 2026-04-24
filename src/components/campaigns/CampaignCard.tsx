@@ -22,11 +22,10 @@ const categoryKeyMap: Record<string, string> = {
 };
 
 const CampaignCard = ({ campaign }: { campaign: Campaign }) => {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const { id, target_amount, current_amount, status, category, images } = campaign;
-  const title = (language === "en" && (campaign as any).title_en) || campaign.title;
-  const short_description =
-    (language === "en" && (campaign as any).short_description_en) || campaign.short_description;
+  const title = campaign.title;
+  const short_description = campaign.short_description;
   const isClosed = status === "completed" || status === "closed";
   const isPending = status === "pending";
   const isRecurring = (campaign as any).campaign_type === "recurring";
