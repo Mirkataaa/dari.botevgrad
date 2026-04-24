@@ -112,9 +112,6 @@ const EditCampaign = () => {
       setTitle(campaign.title);
       setShortDesc(campaign.short_description || "");
       setDescription(campaign.description);
-      setTitleEn((campaign as any).title_en || "");
-      setShortDescEn((campaign as any).short_description_en || "");
-      setDescriptionEn((campaign as any).description_en || "");
       setCategory(campaign.category);
       setTargetAmount(String(campaign.target_amount));
       setDeadline(campaign.deadline ? new Date(campaign.deadline).toISOString().split("T")[0] : "");
@@ -124,32 +121,6 @@ const EditCampaign = () => {
       setMainImageIndex((campaign as any).main_image_index || 0);
     }
   }, [campaign]);
-
-  const handleAutoTranslate = async () => {
-    if (!title.trim() && !shortDesc.trim() && !description.trim()) {
-      toast({ variant: "destructive", title: t("form.translateBgFirst") });
-      return;
-    }
-    setTranslating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("translate-campaign", {
-        body: {
-          title: title.trim() || undefined,
-          short_description: shortDesc.trim() || undefined,
-          description: description.trim() || undefined,
-        },
-      });
-      if (error) throw error;
-      if (data?.title_en) setTitleEn(data.title_en);
-      if (data?.short_description_en) setShortDescEn(data.short_description_en);
-      if (data?.description_en) setDescriptionEn(data.description_en);
-      toast({ title: t("form.translatedOk") });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("form.translateError"), description: err.message });
-    } finally {
-      setTranslating(false);
-    }
-  };
 
   if (isLoading) {
     return (
