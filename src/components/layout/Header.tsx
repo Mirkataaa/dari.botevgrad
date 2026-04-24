@@ -211,6 +211,13 @@ const Header = () => {
                       </Link>
                     )}
                     <Link
+                      to="/campaigns/wizard"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" /> {t("nav.createCampaign")}
+                    </Link>
+                    <Link
                       to="/profile"
                       onClick={() => setMobileOpen(false)}
                       className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent"
