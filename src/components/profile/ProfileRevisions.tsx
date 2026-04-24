@@ -106,6 +106,16 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
   const campaignMap = new Map(campaigns.map(c => [c.id, c]));
   const isLoading = draftsLoading || rejectionsLoading;
 
+  // Filter out drafts/rejections whose campaign no longer exists in DB
+  const existingCampaignIds = new Set(campaigns.map(c => c.id));
+  const campaignsLoaded = campaignIds.length === 0 || campaigns.length > 0 || !isLoading;
+  const visibleDrafts = campaignsLoaded
+    ? drafts.filter(d => existingCampaignIds.has(d.campaign_id))
+    : drafts;
+  const visibleRejections = campaignsLoaded
+    ? rejections.filter(r => existingCampaignIds.has(r.campaign_id))
+    : rejections;
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-10">
@@ -114,13 +124,13 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
     );
   }
 
-  if (drafts.length === 0 && rejections.length === 0) {
+  if (visibleDrafts.length === 0 && visibleRejections.length === 0) {
     return <p className="py-6 text-center text-muted-foreground">Няма редакции или одобрения.</p>;
   }
 
   // Group drafts by campaign
   const draftsByCampaign = new Map<string, Draft[]>();
-  drafts.forEach(d => {
+  visibleDrafts.forEach(d => {
     const arr = draftsByCampaign.get(d.campaign_id) || [];
     arr.push(d);
     draftsByCampaign.set(d.campaign_id, arr);
@@ -128,25 +138,30 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
 
   // Group rejections by campaign
   const rejectionsByCampaign = new Map<string, Rejection[]>();
-  rejections.forEach(r => {
+  visibleRejections.forEach(r => {
     const arr = rejectionsByCampaign.get(r.campaign_id) || [];
     arr.push(r);
     rejectionsByCampaign.set(r.campaign_id, arr);
   });
 
+  const visibleCampaignIds = [...new Set([
+    ...visibleDrafts.map(d => d.campaign_id),
+    ...visibleRejections.map(r => r.campaign_id),
+  ])];
+
   // Determine which campaigns need attention
-  const campaignsWithPending = campaignIds.filter(id => {
+  const campaignsWithPending = visibleCampaignIds.filter(id => {
     const cDrafts = draftsByCampaign.get(id) || [];
     return cDrafts.some(d => d.status === "pending_review");
   });
 
-  const campaignsWithRejected = campaignIds.filter(id => {
+  const campaignsWithRejected = visibleCampaignIds.filter(id => {
     const cRejections = rejectionsByCampaign.get(id) || [];
     return cRejections.some(r => !r.seen_at);
   });
 
   // Sort: rejected first, then pending, then rest
-  const sortedCampaignIds = [...campaignIds].sort((a, b) => {
+  const sortedCampaignIds = [...visibleCampaignIds].sort((a, b) => {
     const aRej = campaignsWithRejected.includes(a) ? 0 : 1;
     const bRej = campaignsWithRejected.includes(b) ? 0 : 1;
     if (aRej !== bRej) return aRej - bRej;
