@@ -217,32 +217,7 @@ const CampaignWizard = () => {
   };
   const removeVideo = (i: number) => setVideoFiles((p) => p.filter((_, idx) => idx !== i));
 
-  // ---------- Translate ----------
-  const handleAutoTranslate = async () => {
-    if (!title.trim() && !shortDesc.trim() && !description.trim()) {
-      toast({ variant: "destructive", title: t("form.translateBgFirst") });
-      return;
-    }
-    setTranslating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("translate-campaign", {
-        body: {
-          title: title.trim() || undefined,
-          short_description: shortDesc.trim() || undefined,
-          description: description.trim() || undefined,
-        },
-      });
-      if (error) throw error;
-      if (data?.title_en) setTitleEn(data.title_en);
-      if (data?.short_description_en) setShortDescEn(data.short_description_en);
-      if (data?.description_en) setDescriptionEn(data.description_en);
-      toast({ title: t("form.translatedOk") });
-    } catch (err: any) {
-      toast({ variant: "destructive", title: t("form.translateError"), description: err.message });
-    } finally {
-      setTranslating(false);
-    }
-  };
+
 
   // ---------- Upload + submit ----------
   const uploadFiles = async (files: File[], bucket: string): Promise<string[]> => {
