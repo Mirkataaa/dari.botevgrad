@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
-  ImagePlus, X, Loader2, FileUp, Video, Star, RefreshCw, Languages,
+  ImagePlus, X, Loader2, FileUp, Video, Star, RefreshCw,
   ChevronLeft, ChevronRight, Sparkles, Check, Info,
 } from "lucide-react";
 import { z } from "zod";
