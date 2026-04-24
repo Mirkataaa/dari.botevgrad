@@ -147,7 +147,10 @@ const Header = () => {
                     </Link>
                   </Button>
                   <Button size="sm" asChild>
-                    <Link to="/register">{t("nav.register")}</Link>
+                    <Link to="/register" state={{ from: "/campaigns/wizard" }}>
+                      <PlusCircle className="mr-1.5 h-4 w-4" />
+                      {t("nav.createCampaign")}
+                    </Link>
                   </Button>
                 </div>
               )}
@@ -230,7 +233,10 @@ const Header = () => {
                       </Link>
                     </Button>
                     <Button asChild onClick={() => setMobileOpen(false)}>
-                      <Link to="/register">{t("nav.register")}</Link>
+                      <Link to="/register" state={{ from: "/campaigns/wizard" }}>
+                        <PlusCircle className="mr-1.5 h-4 w-4" />
+                        {t("nav.createCampaign")}
+                      </Link>
                     </Button>
                   </div>
                 )}
