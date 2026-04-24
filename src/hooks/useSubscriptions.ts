@@ -6,9 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 export interface Subscription {
   id: string;
   campaign_id: string;
-  donor_id: string | null;
-  donor_email: string;
-  stripe_subscription_id: string;
   amount: number;
   interval: string;
   status: string;
@@ -23,8 +20,8 @@ export const useMySubscriptions = () => {
     queryKey: ["my-subscriptions", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("subscriptions" as any)
-        .select("*")
+        .from("subscriptions")
+        .select("id, campaign_id, amount, interval, status, created_at, cancelled_at, current_period_end")
         .eq("donor_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -39,7 +36,7 @@ export const useCampaignSubscriptions = (campaignId?: string) => {
     queryKey: ["campaign-subscriptions", campaignId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("subscriptions" as any)
+        .from("public_campaign_subscriptions" as any)
         .select("*")
         .eq("campaign_id", campaignId!)
         .eq("status", "active")
