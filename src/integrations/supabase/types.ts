@@ -517,7 +517,6 @@ export type Database = {
           is_organization: boolean | null
           organization_name: string | null
           organization_verified: boolean | null
-          phone: string | null
           updated_at: string
         }
         Insert: {
@@ -528,7 +527,6 @@ export type Database = {
           is_organization?: boolean | null
           organization_name?: string | null
           organization_verified?: boolean | null
-          phone?: string | null
           updated_at?: string
         }
         Update: {
@@ -539,7 +537,6 @@ export type Database = {
           is_organization?: boolean | null
           organization_name?: string | null
           organization_verified?: boolean | null
-          phone?: string | null
           updated_at?: string
         }
         Relationships: []
