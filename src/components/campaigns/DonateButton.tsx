@@ -53,9 +53,11 @@ const DonateButton = ({ campaignId, campaignTitle, disabled, isRecurring }: Prop
         if (refreshError) throw new Error(t("donate.sessionExpired"));
       }
       const functionName = isRecurring ? "create-subscription" : "create-checkout";
+      // Non-authenticated donors are always anonymous
+      const effectiveAnonymous = !user ? true : isAnonymous;
       const body = isRecurring
         ? { campaignId, amount: numAmount, interval }
-        : { campaignId, amount: numAmount, isAnonymous };
+        : { campaignId, amount: numAmount, isAnonymous: effectiveAnonymous };
       const { data, error: fnError } = await supabase.functions.invoke(functionName, { body });
       if (fnError) throw new Error(fnError.message || t("donate.error"));
       if (data?.error) throw new Error(data.error);
@@ -125,7 +127,7 @@ const DonateButton = ({ campaignId, campaignTitle, disabled, isRecurring }: Prop
             </div>
           )}
 
-          {!isRecurring && (
+          {!isRecurring && user && (
             <div className="flex items-center gap-2">
               <Checkbox id="anonymous" checked={isAnonymous} onCheckedChange={(c) => setIsAnonymous(c === true)} />
               <Label htmlFor="anonymous" className="text-sm font-normal">{t("donate.anonymous")}</Label>

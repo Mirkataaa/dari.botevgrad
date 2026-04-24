@@ -19,8 +19,7 @@ serve(async (req) => {
   );
 
   try {
-    const { campaignId, amount, isAnonymous } = await req.json();
-    console.log("[create-checkout] Request:", { campaignId, amount, isAnonymous });
+    const { campaignId, amount, isAnonymous: requestedAnonymous } = await req.json();
 
     if (!campaignId || !amount || amount < 1) {
       throw new Error("Invalid campaign or amount");
@@ -34,6 +33,10 @@ serve(async (req) => {
       const { data } = await supabaseClient.auth.getUser(token);
       user = data.user;
     }
+
+    // Force anonymity for non-authenticated donors
+    const isAnonymous = user ? !!requestedAnonymous : true;
+    console.log("[create-checkout] Request:", { campaignId, amount, isAnonymous, authenticated: !!user });
 
     // Get campaign info
     const { data: campaign, error: campErr } = await supabaseClient
