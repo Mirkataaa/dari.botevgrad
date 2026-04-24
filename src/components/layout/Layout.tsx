@@ -4,7 +4,7 @@ import Footer from "./Footer";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
 const Layout = ({ children }: { children: ReactNode }) => {
-  useRealtimeSync("campaigns", [["campaigns"], ["campaign-stats"]]);
+  useRealtimeSync("campaigns", [["campaigns"], ["campaign"], ["campaign-stats"]]);
 
   return (
     <div className="flex min-h-screen flex-col">
