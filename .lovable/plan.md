@@ -1,37 +1,52 @@
 
 
-## Използване на `miroplayground.online` за имейл домейн
+## Reset all Stripe-related data in the database
 
-Да, `miroplayground.online` от GoDaddy ще свърши работа. Ето какво трябва да направиш:
+Since both Stripe accounts are test accounts, we can safely wipe all payment-related records from the database. Old donations and subscriptions reference Stripe IDs from the old test account that won't exist in the new one — keeping them would cause confusion (broken refs, orphaned subscriptions, inflated campaign totals).
 
-### Вариант 1: Използвай `miroplayground.online` вместо `dari.botevgrad.bg`
+### Answers to your questions
 
-1. **Изтрий текущия домейн** `notify.dari.botevgrad.bg` от **Cloud → Emails → Manage Domains** (той така и не се верифицира)
-2. **Добави нов имейл домейн** през същата секция — например `notify.miroplayground.online`
-3. Системата ще ти даде **3 DNS записа** (1 TXT + 2 NS) — подобни на тези, които имаше за `dari.botevgrad.bg`
-4. **Влез в GoDaddy → DNS Management** за `miroplayground.online` и добави записите:
-   - **TXT запис**: Name = `_lovable-email`, Value = `lovable_email_verify=...`
-   - **NS запис**: Name = `notify`, Value = `ns3.lovable.cloud`
-   - **NS запис**: Name = `notify`, Value = `ns4.lovable.cloud`
-5. Изчакай верификацията (обикновено 5-30 минути при GoDaddy)
+- **Yes** — if both Stripe accounts are test mode, deleting test data on Stripe's side has no real-world impact (no real money, no real customers).
+- **Yes** — you should also delete the test data from the old Stripe dashboard (Developers → "Delete all test data") so the old account is clean. That's done by you on stripe.com, not from here.
 
-### Вариант 2: Запази `dari.botevgrad.bg`
+### What will be deleted from the database
 
-Ако предпочиташ имейлите да идват от `dari.botevgrad.bg`, трябва да добавиш DNS записите при провайдъра, който управлява този домейн (не при GoDaddy).
+| Table | Records affected | Why |
+|---|---|---|
+| `donations` | ALL rows | Every donation references a Stripe payment/session ID from the old account |
+| `subscriptions` | ALL rows | Every subscription references a Stripe subscription/customer ID from the old account |
+| `campaigns.current_amount` | Reset to `0` for every campaign | Recomputed from donations — must match the now-empty donations table |
 
-### Стъпки в GoDaddy (ако избереш Вариант 1)
+### What will NOT be touched
 
-1. Влез в GoDaddy → **My Products** → `miroplayground.online` → **DNS**
-2. Натисни **Add New Record**
-3. За TXT записа: Type = TXT, Name = `_lovable-email`, Value = (копирай от Cloud)
-4. За NS записите: Type = NS, Name = `notify`, Value = `ns3.lovable.cloud` (и втори за `ns4.lovable.cloud`)
-5. Запази и изчакай
+- Campaigns themselves (titles, descriptions, images, status, categories, creators)
+- Users, profiles, roles (admin, organizations)
+- Comments, votes, updates, drafts, version history
+- Email logs, contact messages
+- Storage buckets (images, documents, avatars)
 
-### Какво ще се случи след верификация
+### Execution
 
-Имейлите от платформата (потвърждения за дарения, ресет на парола и т.н.) ще идват от `noreply@miroplayground.online` вместо от `dari.botevgrad.bg`.
+Single SQL operation via the data tool (not a migration — this is a data delete, not a schema change):
 
-### Техническа бележка
+```sql
+DELETE FROM public.donations;
+DELETE FROM public.subscriptions;
+UPDATE public.campaigns SET current_amount = 0;
+```
 
-Няма нужда от промени в кода — след верификацията на новия домейн, Edge Functions ще бъдат обновени автоматично с новия sender domain.
+### After this runs
+
+1. You update `STRIPE_SECRET_KEY` with the new account's secret key (secure prompt).
+2. You add a webhook endpoint in the new Stripe dashboard pointing to:
+   `https://zjzyybdvbgovnvftnfod.supabase.co/functions/v1/stripe-webhook`
+   with events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`.
+3. You update `STRIPE_WEBHOOK_SECRET` with the new signing secret (secure prompt).
+4. Make a test donation end-to-end to confirm the new account is wired correctly.
+
+### Technical details
+
+- No code changes, no migrations, no RLS changes.
+- Operation is irreversible — once approved, the donation/subscription history is gone permanently. Since this is test data, that's the intended outcome.
+- Campaign progress bars will all show 0% until new test donations are made.
 
