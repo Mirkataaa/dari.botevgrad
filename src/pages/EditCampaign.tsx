@@ -533,22 +533,36 @@ const EditCampaign = () => {
             {/* Videos */}
             <div className="space-y-2">
               <Label>Видео клипове (до 3)</Label>
+              <p className="text-xs text-muted-foreground">Качете видео файлове от компютъра си (макс. 100MB всеки).</p>
               <div className="space-y-2">
-                {videoUrls.map((url, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Video className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <Input value={url} onChange={e => handleVideoUrlChange(i, e.target.value)} placeholder="https://www.youtube.com/watch?v=..." className="flex-1" />
-                    {videoUrls.length > 1 && (
-                      <button type="button" onClick={() => setVideoUrls(prev => prev.filter((_, idx) => idx !== i))} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
+                {existingVideos.map((url, i) => {
+                  const name = decodeURIComponent(url.split("/").pop() || "Видео");
+                  const isYouTube = /youtube\.com|youtu\.be|vimeo\.com/i.test(url);
+                  return (
+                    <div key={`existing-${i}`} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                      <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className="text-sm truncate flex-1">{isYouTube ? url : name}</span>
+                      <button type="button" onClick={() => setExistingVideos(prev => prev.filter((_, idx) => idx !== i))} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
                         <X className="h-3 w-3" />
                       </button>
-                    )}
+                    </div>
+                  );
+                })}
+                {newVideos.map((file, i) => (
+                  <div key={`new-${i}`} className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                    <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-sm truncate flex-1">{file.name}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                    <button type="button" onClick={() => setNewVideos(prev => prev.filter((_, idx) => idx !== i))} className="rounded-full bg-destructive p-0.5 text-destructive-foreground shrink-0">
+                      <X className="h-3 w-3" />
+                    </button>
                   </div>
                 ))}
-                {videoUrls.length < 3 && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setVideoUrls(prev => [...prev, ""])} className="gap-1">
-                    <Video className="h-4 w-4" /> Добави видео
-                  </Button>
+                {existingVideos.length + newVideos.length < 3 && (
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 px-4 py-3 text-muted-foreground hover:border-primary hover:text-primary">
+                    <Video className="h-5 w-5" /><span className="text-sm">Добави видео файл</span>
+                    <input type="file" accept="video/*" multiple className="hidden" onChange={handleVideoAdd} />
+                  </label>
                 )}
               </div>
             </div>
