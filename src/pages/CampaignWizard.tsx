@@ -73,14 +73,10 @@ const CampaignWizard = () => {
   // Basics
   const [category, setCategory] = useState<CampaignCategory | "">("");
   const [title, setTitle] = useState("");
-  const [titleEn, setTitleEn] = useState("");
 
   // Story
   const [shortDesc, setShortDesc] = useState("");
   const [description, setDescription] = useState("");
-  const [shortDescEn, setShortDescEn] = useState("");
-  const [descriptionEn, setDescriptionEn] = useState("");
-  const [translating, setTranslating] = useState(false);
 
   // Goal
   const [isRecurring, setIsRecurring] = useState(false);
