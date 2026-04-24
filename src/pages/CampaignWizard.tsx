@@ -66,7 +66,7 @@ const CampaignWizard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { t } = useLanguage();
+  
 
   const [step, setStep] = useState(1);
 
