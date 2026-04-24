@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useCampaign } from "@/hooks/useCampaigns";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useLanguage } from "@/contexts/LanguageContext";
+
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
