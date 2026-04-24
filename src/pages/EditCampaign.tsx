@@ -239,27 +239,6 @@ const EditCampaign = () => {
 
     setSubmitting(true);
     try {
-      // Best-effort auto-translate before save if EN fields are empty
-      let finalTitleEn = titleEn.trim();
-      let finalShortEn = shortDescEn.trim();
-      let finalDescEn = descriptionEn.trim();
-      if (!finalTitleEn && !finalShortEn && !finalDescEn) {
-        try {
-          const { data } = await supabase.functions.invoke("translate-campaign", {
-            body: {
-              title: parsed.data.title,
-              short_description: parsed.data.short_description,
-              description: parsed.data.description,
-            },
-          });
-          if (data?.title_en) finalTitleEn = data.title_en;
-          if (data?.short_description_en) finalShortEn = data.short_description_en;
-          if (data?.description_en) finalDescEn = data.description_en;
-        } catch (e) {
-          console.warn("Auto-translate on submit failed (non-blocking)", e);
-        }
-      }
-
       const [newImageUrls, newDocUrls, newVideoUrls] = await Promise.all([
         newImages.length > 0 ? uploadFiles(newImages, "campaign-images") : Promise.resolve([]),
         newDocs.length > 0 ? uploadFiles(newDocs, "campaign-documents") : Promise.resolve([]),
@@ -276,9 +255,6 @@ const EditCampaign = () => {
           title: parsed.data.title,
           short_description: parsed.data.short_description,
           description: parsed.data.description,
-          title_en: finalTitleEn || null,
-          short_description_en: finalShortEn || null,
-          description_en: finalDescEn || null,
           category: parsed.data.category,
           target_amount: parsed.data.target_amount ?? campaign.target_amount,
           deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
@@ -298,9 +274,6 @@ const EditCampaign = () => {
           title: parsed.data.title,
           short_description: parsed.data.short_description,
           description: parsed.data.description,
-          title_en: finalTitleEn || null,
-          short_description_en: finalShortEn || null,
-          description_en: finalDescEn || null,
           category: parsed.data.category,
           target_amount: parsed.data.target_amount ?? campaign.target_amount,
           deadline: parsed.data.deadline ? new Date(parsed.data.deadline).toISOString() : null,
