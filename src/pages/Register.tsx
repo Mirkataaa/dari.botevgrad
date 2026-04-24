@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,13 +18,15 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { signUp, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const from = (location.state as { from?: string } | null)?.from || "/";
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/", { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +48,7 @@ const Register = () => {
       toast({ variant: "destructive", title: t("auth.registerError"), description: error.message });
     } else {
       toast({ title: t("auth.registerSuccess"), description: t("auth.checkEmail") });
-      navigate("/login");
+      navigate("/login", { state: { from } });
     }
     setLoading(false);
   };
@@ -103,7 +105,7 @@ const Register = () => {
             </Button>
             <p className="text-sm text-muted-foreground">
               {t("auth.hasAccount")}{" "}
-              <Link to="/login" className="font-medium text-primary hover:underline">{t("auth.loginLink")}</Link>
+              <Link to="/login" state={{ from }} className="font-medium text-primary hover:underline">{t("auth.loginLink")}</Link>
             </p>
           </CardFooter>
         </form>

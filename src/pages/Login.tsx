@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,13 +19,15 @@ const Login = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const { signIn, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
+  const from = (location.state as { from?: string } | null)?.from || "/";
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/", { replace: true });
+      navigate(from, { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [user, authLoading, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +47,7 @@ const Login = () => {
       });
     } else {
       toast({ title: t("auth.loginSuccess"), description: t("auth.welcomeBack") });
-      navigate("/");
+      navigate(from, { replace: true });
     }
 
     setLoading(false);
@@ -54,7 +56,7 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + (from && from !== "/" ? from : ""),
     });
     if (result.error) {
       toast({
@@ -64,7 +66,7 @@ const Login = () => {
       });
       setGoogleLoading(false);
     } else if (!result.redirected) {
-      navigate("/");
+      navigate(from, { replace: true });
     }
   };
 
@@ -127,7 +129,7 @@ const Login = () => {
             </Button>
             <p className="text-sm text-muted-foreground">
               {t("auth.noAccount")}{" "}
-              <Link to="/register" className="font-medium text-primary hover:underline">{t("auth.registerLink")}</Link>
+              <Link to="/register" state={{ from }} className="font-medium text-primary hover:underline">{t("auth.registerLink")}</Link>
             </p>
           </CardFooter>
         </form>
