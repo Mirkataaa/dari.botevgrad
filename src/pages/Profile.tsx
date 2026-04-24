@@ -80,7 +80,8 @@ const Profile = () => {
     enabled: !!user,
   });
 
-  const canSeeOwnCampaigns = isAdmin || (profile?.is_organization && profile?.organization_verified);
+  // Any authenticated user can see their own campaigns
+  const canSeeOwnCampaigns = !!user;
 
   const { data: myCampaigns = [], isLoading: campaignsLoading } = useQuery({
     queryKey: ["my-campaigns", user?.id],
