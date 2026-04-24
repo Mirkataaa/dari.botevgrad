@@ -386,65 +386,34 @@ const CampaignWizard = () => {
 
           {/* ---------- STEP 2: STORY ---------- */}
           {step === 2 && (
-            <Tabs defaultValue="bg" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="bg">{t("form.langTab.bg")}</TabsTrigger>
-                <TabsTrigger value="en">{t("form.langTab.en")}</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="bg" className="space-y-5 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="w-short">Кратко описание *</Label>
-                  <Textarea
-                    id="w-short"
-                    value={shortDesc}
-                    onChange={(e) => setShortDesc(e.target.value)}
-                    placeholder="Едно изречение, което се показва върху картата на кампанията"
-                    rows={3}
-                    maxLength={300}
-                  />
-                  <p className="text-xs text-muted-foreground">{shortDesc.length}/300</p>
-                  {errors.short_description && <p className="text-sm text-destructive">{errors.short_description}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="w-desc">Пълно описание *</Label>
-                  <Textarea
-                    id="w-desc"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Разкажете каузата подробно — защо е важно, какво ще се случи, как ще се използват средствата..."
-                    rows={8}
-                    maxLength={10000}
-                  />
-                  <p className="text-xs text-muted-foreground">{description.length}/10000</p>
-                  {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="en" className="space-y-4 pt-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-muted-foreground">{t("form.translateHint")}</p>
-                  <Button type="button" variant="outline" size="sm" onClick={handleAutoTranslate} disabled={translating} className="gap-2 shrink-0">
-                    {translating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Languages className="h-4 w-4" />}
-                    {translating ? t("form.translating") : t("form.autoTranslate")}
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="w-title-en">{t("form.title_en")}</Label>
-                  <Input id="w-title-en" value={titleEn} onChange={(e) => setTitleEn(e.target.value)} maxLength={200} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="w-short-en">{t("form.short_desc_en")}</Label>
-                  <Textarea id="w-short-en" value={shortDescEn} onChange={(e) => setShortDescEn(e.target.value)} rows={3} maxLength={300} />
-                  <p className="text-xs text-muted-foreground">{shortDescEn.length}/300</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="w-desc-en">{t("form.description_en")}</Label>
-                  <Textarea id="w-desc-en" value={descriptionEn} onChange={(e) => setDescriptionEn(e.target.value)} rows={8} maxLength={10000} />
-                  <p className="text-xs text-muted-foreground">{descriptionEn.length}/10000</p>
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="w-short">Кратко описание *</Label>
+                <Textarea
+                  id="w-short"
+                  value={shortDesc}
+                  onChange={(e) => setShortDesc(e.target.value)}
+                  placeholder="Едно изречение, което се показва върху картата на кампанията"
+                  rows={3}
+                  maxLength={300}
+                />
+                <p className="text-xs text-muted-foreground">{shortDesc.length}/300</p>
+                {errors.short_description && <p className="text-sm text-destructive">{errors.short_description}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="w-desc">Пълно описание *</Label>
+                <Textarea
+                  id="w-desc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Разкажете каузата подробно — защо е важно, какво ще се случи, как ще се използват средствата..."
+                  rows={8}
+                  maxLength={10000}
+                />
+                <p className="text-xs text-muted-foreground">{description.length}/10000</p>
+                {errors.description && <p className="text-sm text-destructive">{errors.description}</p>}
+              </div>
+            </div>
           )}
 
           {/* ---------- STEP 3: GOAL ---------- */}
