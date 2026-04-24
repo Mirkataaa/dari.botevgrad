@@ -52,7 +52,7 @@ const EditCampaign = () => {
   const { id } = useParams();
   const { user } = useAuth();
   const { isAdmin } = useIsAdmin();
-  const { t } = useLanguage();
+  
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: campaign, isLoading } = useCampaign(id || "");
