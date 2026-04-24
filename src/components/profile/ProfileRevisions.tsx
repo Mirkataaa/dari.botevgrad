@@ -106,6 +106,16 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
   const campaignMap = new Map(campaigns.map(c => [c.id, c]));
   const isLoading = draftsLoading || rejectionsLoading;
 
+  // Filter out drafts/rejections whose campaign no longer exists in DB
+  const existingCampaignIds = new Set(campaigns.map(c => c.id));
+  const campaignsLoaded = campaignIds.length === 0 || campaigns.length > 0 || !isLoading;
+  const visibleDrafts = campaignsLoaded
+    ? drafts.filter(d => existingCampaignIds.has(d.campaign_id))
+    : drafts;
+  const visibleRejections = campaignsLoaded
+    ? rejections.filter(r => existingCampaignIds.has(r.campaign_id))
+    : rejections;
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-10">
