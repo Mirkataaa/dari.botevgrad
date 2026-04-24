@@ -53,9 +53,11 @@ const DonateButton = ({ campaignId, campaignTitle, disabled, isRecurring }: Prop
         if (refreshError) throw new Error(t("donate.sessionExpired"));
       }
       const functionName = isRecurring ? "create-subscription" : "create-checkout";
+      // Non-authenticated donors are always anonymous
+      const effectiveAnonymous = !user ? true : isAnonymous;
       const body = isRecurring
         ? { campaignId, amount: numAmount, interval }
-        : { campaignId, amount: numAmount, isAnonymous };
+        : { campaignId, amount: numAmount, isAnonymous: effectiveAnonymous };
       const { data, error: fnError } = await supabase.functions.invoke(functionName, { body });
       if (fnError) throw new Error(fnError.message || t("donate.error"));
       if (data?.error) throw new Error(data.error);
