@@ -670,6 +670,47 @@ export type Database = {
       }
     }
     Views: {
+      public_campaign_subscriptions: {
+        Row: {
+          amount: number | null
+          campaign_id: string | null
+          cancelled_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          id: string | null
+          interval: string | null
+          status: string | null
+        }
+        Insert: {
+          amount?: number | null
+          campaign_id?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          id?: string | null
+          interval?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number | null
+          campaign_id?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          id?: string | null
+          interval?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_donations: {
         Row: {
           amount: number | null

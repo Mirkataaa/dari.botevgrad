@@ -47,9 +47,16 @@ const CampaignDetails = () => {
   const queryClient = useQueryClient();
   const locale = language === "en" ? "en-GB" : "bg-BG";
 
-  useRealtimeSync("campaigns", [["campaign", id || ""], ["campaigns"], ["donations", id || ""]]);
-  useRealtimeSync("donations", [["campaign", id || ""], ["donations", id || ""], ["my-donations", user?.id || ""]]);
-  useRealtimeSync("subscriptions", [["my-campaign-subscription", id || "", user?.id || ""], ["my-subscriptions", user?.id || ""]]);
+  // Subscribe only to the public 'campaigns' realtime channel.
+  // Donation/subscription invalidations cascade via campaigns.current_amount
+  // updates from the Stripe webhook, plus refetch-on-focus.
+  useRealtimeSync("campaigns", [
+    ["campaign", id || ""],
+    ["campaigns"],
+    ["donations", id || ""],
+    ["my-donations", user?.id || ""],
+    ["my-campaign-subscription", id || "", user?.id || ""],
+  ]);
 
   useEffect(() => {
     if (user && campaign && campaign.created_by === user.id && id) {

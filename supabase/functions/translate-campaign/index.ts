@@ -1,7 +1,11 @@
 // Auto-translates campaign text fields BG -> EN using Lovable AI Gateway (Gemini).
-// Public function: callable by any authenticated user creating/editing a campaign.
+// Authenticated-only: callable by any signed-in user creating/editing a campaign.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +24,27 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Require authentication
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+  if (claimsError || !claimsData?.claims?.sub) {
+    return new Response(
+      JSON.stringify({ error: "unauthorized" }),
+      { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
   try {
     const body: TranslateBody = await req.json();
 
@@ -27,7 +52,9 @@ Deno.serve(async (req) => {
     for (const k of ["title", "short_description", "description"] as const) {
       const v = body[k];
       if (typeof v === "string" && v.trim().length > 0) {
-        fields.push({ key: k, value: v });
+        // Cap input size per field to limit abuse
+        const trimmed = v.trim().slice(0, 5000);
+        fields.push({ key: k, value: trimmed });
       }
     }
 
@@ -89,7 +116,6 @@ Deno.serve(async (req) => {
 
     const aiJson = await aiRes.json();
     let content: string = aiJson?.choices?.[0]?.message?.content || "{}";
-    // Strip possible markdown fences
     content = content.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
 
     let parsed: Record<string, string> = {};

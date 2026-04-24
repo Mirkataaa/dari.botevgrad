@@ -93,11 +93,22 @@ Deno.serve(async (req) => {
       url.searchParams.get("id") ||
       (idFromPath && idFromPath !== "og-preview" ? idFromPath : "");
 
-    const origin =
-      url.searchParams.get("origin") ||
-      req.headers.get("x-forwarded-host") ||
-      "dari-botevgrad.lovable.app";
-    const siteOrigin = origin.startsWith("http") ? origin : `https://${origin}`;
+    // Whitelist of permitted SPA origins to prevent open-redirect abuse.
+    const ALLOWED_ORIGINS = [
+      "https://dari-botevgrad.lovable.app",
+      "https://id-preview--c849dc38-bf6c-4d89-b7b1-b435fc80be86.lovable.app",
+    ];
+    const DEFAULT_ORIGIN = "https://dari-botevgrad.lovable.app";
+
+    const requested = url.searchParams.get("origin");
+    const normalize = (raw: string) =>
+      raw.startsWith("http") ? raw : `https://${raw}`;
+
+    let siteOrigin = DEFAULT_ORIGIN;
+    if (requested) {
+      const candidate = normalize(requested);
+      if (ALLOWED_ORIGINS.includes(candidate)) siteOrigin = candidate;
+    }
     const spaUrl = campaignId ? `${siteOrigin}/campaign/${campaignId}` : siteOrigin;
 
     const ua = req.headers.get("user-agent") || "";
