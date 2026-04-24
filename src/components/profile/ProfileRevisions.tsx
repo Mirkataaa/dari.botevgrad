@@ -161,7 +161,7 @@ const ProfileRevisions = ({ highlightCampaignId }: { highlightCampaignId?: strin
   });
 
   // Sort: rejected first, then pending, then rest
-  const sortedCampaignIds = [...campaignIds].sort((a, b) => {
+  const sortedCampaignIds = [...visibleCampaignIds].sort((a, b) => {
     const aRej = campaignsWithRejected.includes(a) ? 0 : 1;
     const bRej = campaignsWithRejected.includes(b) ? 0 : 1;
     if (aRej !== bRej) return aRej - bRej;
