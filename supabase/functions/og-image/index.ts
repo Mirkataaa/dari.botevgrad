@@ -9,7 +9,7 @@ import {
   MagickFormat,
   MagickGeometry,
   Gravity,
-} from "https://deno.land/x/imagemagick_deno@0.0.31/mod.ts";
+} from "https://esm.sh/@imagemagick/magick-wasm@0.0.30";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -18,13 +18,20 @@ const TARGET_W = 1200;
 const TARGET_H = 630;
 
 let magickReady: Promise<void> | null = null;
-function ensureMagick() {
-  if (!magickReady) magickReady = initializeImageMagick();
+async function ensureMagick() {
+  if (!magickReady) {
+    magickReady = (async () => {
+      const wasmRes = await fetch(
+        "https://esm.sh/@imagemagick/magick-wasm@0.0.30/dist/magick.wasm"
+      );
+      const wasmBytes = new Uint8Array(await wasmRes.arrayBuffer());
+      await initializeImageMagick(wasmBytes);
+    })();
+  }
   return magickReady;
 }
 
 function placeholderPng(): Uint8Array {
-  // A tiny 1x1 transparent PNG fallback (rarely used).
   return new Uint8Array([
     0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
     0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
@@ -39,8 +46,7 @@ async function fetchSourceImage(url: string): Promise<Uint8Array | null> {
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
-    const buf = await res.arrayBuffer();
-    return new Uint8Array(buf);
+    return new Uint8Array(await res.arrayBuffer());
   } catch {
     return null;
   }
@@ -56,7 +62,6 @@ async function buildOgImage(srcBytes: Uint8Array): Promise<Uint8Array> {
         geom.fillArea = true;
         img.resize(geom);
         img.crop(new MagickGeometry(TARGET_W, TARGET_H), Gravity.Center);
-        // Some ImageMagick builds keep extra canvas after crop — flatten it.
         img.repage();
         img.write(MagickFormat.Jpeg, (out) => resolve(new Uint8Array(out)));
       });
@@ -75,9 +80,7 @@ Deno.serve(async (req) => {
       url.searchParams.get("id") ||
       (idFromPath && idFromPath !== "og-image" ? idFromPath : "");
 
-    if (!campaignId) {
-      return new Response("Missing campaign id", { status: 400 });
-    }
+    if (!campaignId) return new Response("Missing campaign id", { status: 400 });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data: campaign } = await supabase
@@ -94,10 +97,7 @@ Deno.serve(async (req) => {
     if (!sourceUrl) {
       return new Response(placeholderPng(), {
         status: 200,
-        headers: {
-          "Content-Type": "image/png",
-          "Cache-Control": "public, max-age=300",
-        },
+        headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=300" },
       });
     }
 
@@ -105,10 +105,7 @@ Deno.serve(async (req) => {
     if (!srcBytes) {
       return new Response(placeholderPng(), {
         status: 200,
-        headers: {
-          "Content-Type": "image/png",
-          "Cache-Control": "public, max-age=300",
-        },
+        headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=300" },
       });
     }
 
@@ -118,7 +115,6 @@ Deno.serve(async (req) => {
       status: 200,
       headers: {
         "Content-Type": "image/jpeg",
-        // Cache for 24h on social CDNs; we can bust via ?v= query param.
         "Cache-Control": "public, max-age=86400, s-maxage=86400, immutable",
       },
     });
