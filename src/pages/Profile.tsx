@@ -188,30 +188,6 @@ const Profile = () => {
             </Button>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5" /> {t("profile.changePassword")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="oldPw">{t("profile.currentPassword")}</Label>
-              <Input id="oldPw" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="newPw">{t("profile.newPassword")}</Label>
-              <Input id="newPw" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="confirmPw">{t("profile.confirmPassword")}</Label>
-              <Input id="confirmPw" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button onClick={handleChangePassword} disabled={changingPw || !oldPassword || !newPassword} variant="outline" className="w-full">
-              {changingPw ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
-              {t("profile.changePasswordBtn")}
-            </Button>
-          </CardContent>
-        </Card>
       </div>
 
       {canSeeOwnCampaigns && (
