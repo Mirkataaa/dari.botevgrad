@@ -227,7 +227,7 @@ const translations: Translations = {
   "faq.q4": { bg: "Мога ли да даря анонимно?", en: "Can I donate anonymously?" },
   "faq.a4": { bg: "Да. При дарение можете да изберете да останете анонимен/на — вашето име няма да бъде показано публично.", en: "Yes. When donating, you can choose to remain anonymous — your name will not be shown publicly." },
   "faq.q5": { bg: "Как мога да създам кампания?", en: "How can I create a campaign?" },
-  "faq.a5": { bg: "Кампании могат да създават верифицирани организации и администратори. Свържете се с нас чрез формата за контакт за повече информация.", en: "Campaigns can be created by verified organizations and administrators. Contact us through the contact form for more information." },
+  "faq.a5": { bg: "Кампании могат да създават всички регистрирани потребители. Свържете се с нас чрез формата за контакт за повече информация.", en: "Campaigns can be created by any registered user. Contact us through the contact form for more information." },
   "faq.q6": { bg: "Къде отиват парите от дарението?", en: "Where does the donation money go?" },
   "faq.a6": { bg: "Средствата от всяка кампания се насочват директно към целта, описана в кампанията. Община Ботевград гарантира правилното разпределение на средствата.", en: "The funds from each campaign go directly to the goal described in the campaign. Botevgrad Municipality ensures the proper distribution of funds." },
   "faq.q7": { bg: "Мога ли да получа фактура за дарението си?", en: "Can I get an invoice for my donation?" },
