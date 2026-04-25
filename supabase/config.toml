@@ -19,3 +19,5 @@ project_id = "zjzyybdvbgovnvftnfod"
     verify_jwt = true
   [functions.og-preview]
     verify_jwt = false
+  [functions.og-image]
+    verify_jwt = false
