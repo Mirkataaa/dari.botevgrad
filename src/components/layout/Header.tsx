@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, LogIn, LogOut, User, ShieldCheck, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ const Header = () => {
   const { user, signOut, loading } = useAuth();
   const { isAdmin } = useIsAdmin();
   const { profile } = useProfile();
-  const [canCreate, setCanCreate] = useState(false);
 
   const navLinks = [
     { to: "/", label: t("nav.home") },
@@ -35,13 +34,6 @@ const Header = () => {
     { to: "/completed", label: t("nav.completed") },
     { to: "/about", label: t("nav.about") },
   ];
-
-  useEffect(() => {
-    if (!user) { setCanCreate(false); return; }
-    if (profile) {
-      setCanCreate(!!profile.is_organization && !!profile.organization_verified);
-    }
-  }, [user, profile]);
 
   const handleSignOut = async () => {
     await signOut();
