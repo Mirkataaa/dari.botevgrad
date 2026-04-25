@@ -70,10 +70,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
             </div>
           )}
           <div className="p-3">
-            <p className="text-xs uppercase text-muted-foreground truncate">
-              {window.location.host}
-            </p>
-            <p className="text-sm font-semibold mt-1 line-clamp-2">{campaignTitle}</p>
+            <p className="text-sm font-semibold line-clamp-2">{campaignTitle}</p>
           </div>
         </div>
 
