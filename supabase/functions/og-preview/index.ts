@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     const { data: campaign } = await supabase
       .from("campaigns")
       .select(
-        "id, title, short_description, description, images, main_image_index, current_amount, target_amount, deadline"
+        "id, title, short_description, description, images, main_image_index, current_amount, target_amount, deadline, updated_at"
       )
       .eq("id", campaignId)
       .maybeSingle();
@@ -151,9 +151,14 @@ Deno.serve(async (req) => {
     }
 
     const mainIdx = (campaign as any).main_image_index ?? 0;
-    const image =
-      (campaign.images && (campaign.images[mainIdx] || campaign.images[0])) ||
-      `${siteOrigin}/placeholder.svg`;
+    const hasImage =
+      campaign.images && (campaign.images[mainIdx] || campaign.images[0]);
+    // Always serve OG image through our normalizer endpoint so social platforms
+    // get a proper 1200x630 JPEG regardless of the original image's dimensions.
+    const ogImageBase = `${SUPABASE_URL}/functions/v1/og-image/${campaignId}`;
+    const image = hasImage
+      ? `${ogImageBase}?v=${encodeURIComponent(String((campaign as any).updated_at || campaign.id))}`
+      : `${siteOrigin}/placeholder.svg`;
 
     const title = campaign.title;
     const shortDesc = campaign.short_description;
