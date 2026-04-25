@@ -21,11 +21,12 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
 
-  // Public site URL (where humans land)
+  // Public site URL (where humans land directly when typing in browser)
   const siteUrl = `${window.location.origin}/campaign/${campaignId}`;
-  // Crawler-facing URL: edge function returns OG-tagged HTML for FB scraper
-  // and 302-redirects normal users back to siteUrl. Use this URL when posting
-  // to social networks so previews always work.
+  // Crawler-facing URL: edge function returns OG-tagged HTML for social scrapers
+  // (Facebook, Messenger, X, LinkedIn, etc.) and 302-redirects normal users
+  // back to siteUrl. We use this URL EVERYWHERE the link will be shared so
+  // previews always work — even when users copy/paste the link manually.
   const shareUrl = PROJECT_ID
     ? `https://${PROJECT_ID}.supabase.co/functions/v1/og-preview/${campaignId}?origin=${encodeURIComponent(window.location.origin)}&lang=${language}`
     : siteUrl;
@@ -34,7 +35,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   const embedCode = `<iframe src="${siteUrl}" width="400" height="300" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
 
   const copyLink = async () => {
-    await navigator.clipboard.writeText(siteUrl);
+    await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     toast({ title: t("share.linkCopied") });
     setTimeout(() => setCopied(false), 2000);
@@ -59,7 +60,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: campaignTitle, url: siteUrl });
+        await navigator.share({ title: campaignTitle, url: shareUrl });
         return;
       } catch {
         // fall through to dialog
