@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle, FileEdit } from "lucide-react";
+import { Loader2, Save, User, History, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle, FileEdit } from "lucide-react";
 import { useMySubscriptions, useCancelSubscription } from "@/hooks/useSubscriptions";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate, Link, useLocation } from "react-router-dom";
@@ -38,10 +38,6 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [changingPw, setChangingPw] = useState(false);
   const revisionsRef = useRef<HTMLDivElement>(null);
 
   const statusLabels: Record<string, string> = {
@@ -155,19 +151,6 @@ const Profile = () => {
     setSaving(false);
     if (error) { toast({ variant: "destructive", title: t("common.error"), description: error.message }); }
     else { queryClient.invalidateQueries({ queryKey: ["profile", user.id] }); toast({ title: t("profile.profileUpdated") }); }
-  };
-
-  const handleChangePassword = async () => {
-    if (!oldPassword) { toast({ variant: "destructive", title: t("profile.enterCurrentPw") }); return; }
-    if (newPassword.length < 6) { toast({ variant: "destructive", title: t("profile.newPwMin") }); return; }
-    if (newPassword !== confirmPassword) { toast({ variant: "destructive", title: t("profile.pwMismatch") }); return; }
-    setChangingPw(true);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email!, password: oldPassword });
-    if (signInError) { setChangingPw(false); toast({ variant: "destructive", title: t("profile.wrongCurrentPw") }); return; }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setChangingPw(false);
-    if (error) { toast({ variant: "destructive", title: t("common.error"), description: error.message }); }
-    else { setOldPassword(""); setNewPassword(""); setConfirmPassword(""); toast({ title: t("profile.pwChanged") }); }
   };
 
   return (
