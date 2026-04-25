@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Share2, Copy, Check, Facebook } from "lucide-react";
+import { Share2, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -19,7 +18,6 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const [copied, setCopied] = useState(false);
-  const [embedCopied, setEmbedCopied] = useState(false);
 
   // Public site URL (where humans land directly when typing in browser)
   const siteUrl = `${window.location.origin}/campaign/${campaignId}`;
@@ -30,31 +28,12 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   const shareUrl = PROJECT_ID
     ? `https://${PROJECT_ID}.supabase.co/functions/v1/og-preview/${campaignId}?origin=${encodeURIComponent(window.location.origin)}&lang=${language}`
     : siteUrl;
-  const encodedShareUrl = encodeURIComponent(shareUrl);
-
-  const embedCode = `<iframe src="${siteUrl}" width="400" height="300" frameborder="0" style="border-radius:12px;overflow:hidden;"></iframe>`;
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     toast({ title: t("share.linkCopied") });
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const copyEmbed = async () => {
-    await navigator.clipboard.writeText(embedCode);
-    setEmbedCopied(true);
-    toast({ title: t("share.embedCopied") });
-    setTimeout(() => setEmbedCopied(false), 2000);
-  };
-
-  // Use anchor click instead of window.open to avoid COOP issues in Firefox
-  const openShareUrl = (url: string) => {
-    const link = document.createElement("a");
-    link.href = url;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.click();
   };
 
   const handleShare = async () => {
@@ -83,41 +62,26 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
           <DialogDescription>{t("share.desc")}</DialogDescription>
         </DialogHeader>
 
-        {campaignImage && (
-          <div className="aspect-video overflow-hidden rounded-lg bg-secondary">
-            <img src={campaignImage} alt={campaignTitle} className="h-full w-full object-cover" />
+        {/* Facebook-style preview card */}
+        <div className="overflow-hidden rounded-lg border border-border bg-card">
+          {campaignImage && (
+            <div className="aspect-video overflow-hidden bg-secondary">
+              <img src={campaignImage} alt={campaignTitle} className="h-full w-full object-cover" />
+            </div>
+          )}
+          <div className="p-3">
+            <p className="text-xs uppercase text-muted-foreground truncate">
+              {window.location.host}
+            </p>
+            <p className="text-sm font-semibold mt-1 line-clamp-2">{campaignTitle}</p>
           </div>
-        )}
-
-        <p className="text-sm font-medium">{campaignTitle}</p>
-
-        {/* Copy link */}
-        <div className="flex gap-2">
-          <Input value={shareUrl} readOnly className="text-sm" />
-          <Button variant="outline" size="icon" onClick={copyLink}>
-            {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-          </Button>
         </div>
 
-        {/* Social buttons */}
-        <Button
-          variant="outline"
-          className="w-full gap-2 text-sm"
-          onClick={() => openShareUrl(`https://www.facebook.com/sharer/sharer.php?u=${encodedShareUrl}`)}
-        >
-          <Facebook className="h-4 w-4" /> Facebook
+        {/* Single copy button */}
+        <Button onClick={copyLink} className="w-full gap-2">
+          {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {copied ? t("share.linkCopied") : t("share.copyLink")}
         </Button>
-
-        {/* Embed code */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">{t("share.embedLabel")}</p>
-          <div className="flex gap-2">
-            <Input value={embedCode} readOnly className="text-xs font-mono" />
-            <Button variant="outline" size="icon" onClick={copyEmbed}>
-              {embedCopied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
-            </Button>
-          </div>
-        </div>
       </DialogContent>
     </Dialog>
   );
