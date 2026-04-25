@@ -158,7 +158,7 @@ const Profile = () => {
       <h1 className="font-heading text-3xl font-bold md:text-4xl">{t("profile.title")}</h1>
       <p className="mt-2 text-muted-foreground">{user.email}</p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+      <div className="mt-8 grid gap-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> {t("profile.personalInfo")}</CardTitle>
