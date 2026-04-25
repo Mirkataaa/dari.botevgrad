@@ -93,7 +93,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
 
         {/* Copy link */}
         <div className="flex gap-2">
-          <Input value={siteUrl} readOnly className="text-sm" />
+          <Input value={shareUrl} readOnly className="text-sm" />
           <Button variant="outline" size="icon" onClick={copyLink}>
             {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
           </Button>
