@@ -18,6 +18,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
 
   // Public site URL (where humans land directly when typing in browser)
   const siteUrl = `${window.location.origin}/campaign/${campaignId}`;
@@ -33,7 +34,10 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
     await navigator.clipboard.writeText(shareUrl);
     setCopied(true);
     toast({ title: t("share.linkCopied") });
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => {
+      setCopied(false);
+      setOpen(false);
+    }, 800);
   };
 
   const handleShare = async () => {
@@ -50,7 +54,7 @@ const ShareWidget = ({ campaignId, campaignTitle, campaignImage, size = "default
   const btnClass = size === "sm" ? "h-9 w-9" : "h-11 w-11";
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" className={`${btnClass} shrink-0`} onClick={handleShare}>
           <Share2 className="h-4 w-4" />
