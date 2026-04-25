@@ -62,7 +62,6 @@ async function buildOgImage(srcBytes: Uint8Array): Promise<Uint8Array> {
         geom.fillArea = true;
         img.resize(geom);
         img.crop(new MagickGeometry(TARGET_W, TARGET_H), Gravity.Center);
-        img.repage();
         img.write(MagickFormat.Jpeg, (out) => resolve(new Uint8Array(out)));
       });
     } catch (e) {
@@ -95,7 +94,7 @@ Deno.serve(async (req) => {
       null;
 
     if (!sourceUrl) {
-      return new Response(placeholderPng(), {
+      return new Response(placeholderPng() as BodyInit, {
         status: 200,
         headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=300" },
       });
@@ -103,7 +102,7 @@ Deno.serve(async (req) => {
 
     const srcBytes = await fetchSourceImage(sourceUrl);
     if (!srcBytes) {
-      return new Response(placeholderPng(), {
+      return new Response(placeholderPng() as BodyInit, {
         status: 200,
         headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=300" },
       });
@@ -111,7 +110,7 @@ Deno.serve(async (req) => {
 
     const outBytes = await buildOgImage(srcBytes);
 
-    return new Response(outBytes, {
+    return new Response(outBytes as BodyInit, {
       status: 200,
       headers: {
         "Content-Type": "image/jpeg",
