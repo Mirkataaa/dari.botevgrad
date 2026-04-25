@@ -62,6 +62,7 @@ const translations: Translations = {
   "share.title": { bg: "Сподели кампанията", en: "Share Campaign" },
   "share.desc": { bg: "Изберете начин за споделяне на кампанията с приятели.", en: "Choose how to share the campaign with friends." },
   "share.linkCopied": { bg: "Линкът е копиран!", en: "Link copied!" },
+  "share.copyLink": { bg: "Копирай линка", en: "Copy link" },
   "share.embedCopied": { bg: "Embed кодът е копиран!", en: "Embed code copied!" },
   "share.embedLabel": { bg: "Embed код (iframe)", en: "Embed code (iframe)" },
   "share.instagramHint": { bg: "Линкът е копиран! Споделете го в Instagram.", en: "Link copied! Share it on Instagram." },
