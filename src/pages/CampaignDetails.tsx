@@ -152,6 +152,54 @@ const CampaignDetails = () => {
         <div className="space-y-6">
           <Card className="sticky top-20">
             <CardContent className="space-y-6 p-6">
+              {!isRecurring && campaign.deadline && (() => {
+                const deadlineDate = new Date(campaign.deadline);
+                const now = new Date();
+                const msPerDay = 1000 * 60 * 60 * 24;
+                const diffDays = Math.ceil((deadlineDate.getTime() - now.getTime()) / msPerDay);
+                const isExpired = diffDays < 0 || isClosed;
+                const formattedDate = deadlineDate.toLocaleDateString(locale, {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                });
+
+                let statusLabel = "";
+                let statusClass = "";
+                if (isExpired) {
+                  statusLabel = t("details.expired");
+                  statusClass = "text-destructive";
+                } else if (diffDays === 0) {
+                  statusLabel = t("details.lastDay");
+                  statusClass = "text-amber-600 dark:text-amber-400";
+                } else if (diffDays === 1) {
+                  statusLabel = t("details.dayLeft");
+                  statusClass = "text-amber-600 dark:text-amber-400";
+                } else if (diffDays <= 7) {
+                  statusLabel = t("details.daysLeft").replace("{n}", String(diffDays));
+                  statusClass = "text-amber-600 dark:text-amber-400";
+                } else {
+                  statusLabel = t("details.daysLeft").replace("{n}", String(diffDays));
+                  statusClass = "text-muted-foreground";
+                }
+
+                return (
+                  <div className={`rounded-lg border p-4 ${isExpired ? "border-destructive/30 bg-destructive/5" : "border-border bg-secondary/40"}`}>
+                    <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {t("details.deadline")}
+                    </div>
+                    <p className="mt-1.5 text-xl font-bold text-foreground">
+                      {formattedDate}
+                    </p>
+                    <p className={`mt-1 flex items-center gap-1.5 text-sm font-semibold ${statusClass}`}>
+                      <Clock className="h-3.5 w-3.5" />
+                      {statusLabel}
+                    </p>
+                  </div>
+                );
+              })()}
+
               {!isRecurring && (
                 <CampaignProgress collected={Number(campaign.current_amount)} target={Number(campaign.target_amount)} size="lg" />
               )}

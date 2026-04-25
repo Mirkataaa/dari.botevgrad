@@ -10,7 +10,7 @@ export const useProfile = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, avatar_url, is_organization, organization_verified")
+        .select("id, full_name, avatar_url")
         .eq("id", user!.id)
         .maybeSingle();
       if (error) throw error;

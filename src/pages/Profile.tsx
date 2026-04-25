@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Save, User, History, Lock, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle, FileEdit } from "lucide-react";
+import { Loader2, Save, User, History, Upload, Megaphone, Eye, Pencil, AlertTriangle, RefreshCw, XCircle, FileEdit } from "lucide-react";
 import { useMySubscriptions, useCancelSubscription } from "@/hooks/useSubscriptions";
 import { useToast } from "@/hooks/use-toast";
 import { Navigate, Link, useLocation } from "react-router-dom";
@@ -38,10 +38,6 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [oldPassword, setOldPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [changingPw, setChangingPw] = useState(false);
   const revisionsRef = useRef<HTMLDivElement>(null);
 
   const statusLabels: Record<string, string> = {
@@ -157,25 +153,12 @@ const Profile = () => {
     else { queryClient.invalidateQueries({ queryKey: ["profile", user.id] }); toast({ title: t("profile.profileUpdated") }); }
   };
 
-  const handleChangePassword = async () => {
-    if (!oldPassword) { toast({ variant: "destructive", title: t("profile.enterCurrentPw") }); return; }
-    if (newPassword.length < 6) { toast({ variant: "destructive", title: t("profile.newPwMin") }); return; }
-    if (newPassword !== confirmPassword) { toast({ variant: "destructive", title: t("profile.pwMismatch") }); return; }
-    setChangingPw(true);
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email!, password: oldPassword });
-    if (signInError) { setChangingPw(false); toast({ variant: "destructive", title: t("profile.wrongCurrentPw") }); return; }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    setChangingPw(false);
-    if (error) { toast({ variant: "destructive", title: t("common.error"), description: error.message }); }
-    else { setOldPassword(""); setNewPassword(""); setConfirmPassword(""); toast({ title: t("profile.pwChanged") }); }
-  };
-
   return (
     <div className="container py-10 md:py-14">
       <h1 className="font-heading text-3xl font-bold md:text-4xl">{t("profile.title")}</h1>
       <p className="mt-2 text-muted-foreground">{user.email}</p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-2">
+      <div className="mt-8 grid gap-8">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> {t("profile.personalInfo")}</CardTitle>
@@ -202,30 +185,6 @@ const Profile = () => {
             <Button onClick={handleSaveProfile} disabled={saving} className="w-full">
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {t("profile.saveChanges")}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5" /> {t("profile.changePassword")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="oldPw">{t("profile.currentPassword")}</Label>
-              <Input id="oldPw" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="newPw">{t("profile.newPassword")}</Label>
-              <Input id="newPw" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="confirmPw">{t("profile.confirmPassword")}</Label>
-              <Input id="confirmPw" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button onClick={handleChangePassword} disabled={changingPw || !oldPassword || !newPassword} variant="outline" className="w-full">
-              {changingPw ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lock className="mr-2 h-4 w-4" />}
-              {t("profile.changePasswordBtn")}
             </Button>
           </CardContent>
         </Card>
