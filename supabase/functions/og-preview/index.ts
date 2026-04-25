@@ -71,9 +71,9 @@ function buildHtml(opts: {
 <meta name="twitter:title" content="${escapeHtml(title)}" />
 <meta name="twitter:description" content="${escapeHtml(richDesc)}" />
 <meta name="twitter:image" content="${escapeHtml(image)}" />
+<meta property="og:image:type" content="image/jpeg" />
 
 <link rel="canonical" href="${escapeHtml(url)}" />
-<meta http-equiv="refresh" content="0;url=${escapeHtml(url)}" />
 </head>
 <body>
 <h1>${escapeHtml(title)}</h1>
