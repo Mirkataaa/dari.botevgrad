@@ -138,6 +138,11 @@ const translations: Translations = {
   "details.noDonations": { bg: "Все още няма дарения", en: "No donations yet" },
   "details.anonymous": { bg: "Анонимен", en: "Anonymous" },
   "details.donor": { bg: "Дарител", en: "Donor" },
+  "details.deadline": { bg: "Крайна дата", en: "Deadline" },
+  "details.daysLeft": { bg: "Остават {n} дни", en: "{n} days left" },
+  "details.dayLeft": { bg: "Остава 1 ден", en: "1 day left" },
+  "details.lastDay": { bg: "Последен ден", en: "Last day" },
+  "details.expired": { bg: "Изтекла кампания", en: "Campaign expired" },
 
   // Donate button
   "donate.title": { bg: "Дари за", en: "Donate for" },
