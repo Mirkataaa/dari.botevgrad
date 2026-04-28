@@ -90,6 +90,12 @@ serve(async (req) => {
         is_anonymous: String(isAnonymous),
         amount: String(amount),
       },
+      payment_intent_data: {
+        // Ensure Stripe always sends an email receipt for successful payments.
+        // For logged-in donors we pre-fill from their account email; for guests
+        // Stripe Checkout will collect an email and use it automatically.
+        ...(user?.email ? { receipt_email: user.email } : {}),
+      },
       success_url: `${origin}/payment-success?campaign=${campaignId}`,
       cancel_url: `${origin}/campaign/${campaignId}?payment=cancelled`,
     });
