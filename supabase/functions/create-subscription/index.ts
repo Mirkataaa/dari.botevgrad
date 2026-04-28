@@ -105,6 +105,7 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
+      payment_method_types: ["card"],
       metadata: {
         campaign_id: campaignId,
         donor_id: user.id,
