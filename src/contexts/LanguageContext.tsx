@@ -57,6 +57,13 @@ const translations: Translations = {
   "auth.error": { bg: "Грешка", en: "Error" },
   "auth.googleError": { bg: "Грешка при вход с Google", en: "Google sign-in error" },
   "auth.forgotPassword": { bg: "Забравена парола?", en: "Forgot password?" },
+  "auth.forgotTitle": { bg: "Забравена парола", en: "Forgot password" },
+  "auth.forgotDesc": { bg: "Въведете имейла си и ще ви изпратим линк за нулиране на паролата.", en: "Enter your email and we'll send you a password reset link." },
+  "auth.sendResetLink": { bg: "Изпрати линк за нулиране", en: "Send reset link" },
+  "auth.sending": { bg: "Изпращане...", en: "Sending..." },
+  "auth.resetEmailSentTitle": { bg: "Проверете имейла си", en: "Check your email" },
+  "auth.resetEmailSent": { bg: "Ако съществува акаунт с този имейл, ще получите линк за нулиране на паролата.", en: "If an account exists for this email, you'll receive a reset link shortly." },
+  "auth.backToLogin": { bg: "Назад към вход", en: "Back to login" },
 
   // Share
   "share.title": { bg: "Сподели кампанията", en: "Share Campaign" },

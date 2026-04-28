@@ -115,7 +115,12 @@ const Login = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">{t("auth.password")}</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">{t("auth.password")}</Label>
+                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                  {t("auth.forgotPassword")}
+                </Link>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" required />
