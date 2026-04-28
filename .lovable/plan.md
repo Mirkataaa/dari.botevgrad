@@ -1,74 +1,76 @@
-# Активиране на Stripe разписки (receipts)
+## Текущо състояние
 
-## Каква е причината в момента
+**Добра новина: цялата email infrastructure за recovery вече е настроена и работи!**
 
-В кода за създаване на checkout sessions (`create-checkout` за еднократни дарения и `create-subscription` за абонаменти) **не е заявено** изпращане на receipt email от Stripe. Затова Stripe не изпраща нищо след успешно плащане.
+- ✅ Домейн `daribotevgrad.notify.miroplayground.online` е верифициран
+- ✅ `auth-email-hook` edge function е deploy-ната и enqueue-ва recovery имейли
+- ✅ `recovery.tsx` шаблонът съществува (на български, brand styled)
+- ✅ Страницата `/reset-password` вече е създадена и работи (`src/pages/ResetPassword.tsx`)
+- ✅ Превод `auth.forgotPassword` = "Забравена парола?" вече е дефиниран
 
-Има два начина receipts да тръгнат — единият е настройка в Stripe Dashboard (за теб), другият е малка промяна в кода (от мен). Препоръчвам да направим **и двете**, за да сме сигурни.
+**Какво липсва:** Само UI входната точка — потребителят няма откъде да поиска email за нулиране на паролата. Текущата Login страница няма "Забравена парола?" линк.
 
----
+## Какво ще направим
 
-## Какво трябва да направиш ти в Stripe (еднократно)
+### 1. Нова страница `/forgot-password`
+Създаване на `src/pages/ForgotPassword.tsx`:
+- Форма с едно поле за email
+- При submit извиква:
+  ```ts
+  supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`
+  })
+  ```
+- Показва toast съобщение "Изпратихме ви имейл с линк за нулиране на паролата" (без значение дали имейлът съществува — за security)
+- Линк обратно към `/login`
+- Същият branded дизайн както Login/Register (Card, KeyRound icon)
 
-1. Влез в [dashboard.stripe.com](https://dashboard.stripe.com).
-2. Отиди в **Settings → Emails** (или директно: Settings → Customer emails).
-3. Включи опцията **"Successful payments"** — това кара Stripe автоматично да изпраща разписка след всяко успешно плащане.
-4. Включи и **"Refunds"** (по желание) — за случаите на връщане на дарение.
-5. По желание: качи лого и цвят в **Settings → Branding**, за да изглеждат разписките с твоя бранд.
-
-⚠️ Важно: тези настройки са отделни за **Test mode** и **Live mode** (превключвателят горе вдясно в Stripe). Включи ги и в двата режима, ако тестваш с тестови карти.
-
----
-
-## Какво ще променя аз в кода
-
-За да гарантирам, че receipt-ът тръгва дори ако някоя настройка е изключена, ще добавя следните параметри:
-
-### 1. `create-checkout/index.ts` (еднократни дарения)
-Добавям в `stripe.checkout.sessions.create({...})`:
-```ts
-payment_intent_data: {
-  receipt_email: user?.email || undefined,
-},
+### 2. Регистриране на route в `src/App.tsx`
+Добавяне на:
+```tsx
+<Route element={<Layout><ForgotPassword /></Layout>} path="/forgot-password" />
 ```
-- Ако дарителят е логнат → receipt отива на неговия email.
-- Ако дарителят е анонимен/гост → Stripe Checkout вече събира email в самата форма и автоматично го използва за receipt (когато настройката от стъпка 1 е включена).
 
-### 2. `create-subscription/index.ts` (абонаменти)
-За абонаменти Stripe изпраща **invoice email** след всяко успешно плащане (не "receipt" в тесния смисъл). Добавям:
-```ts
-subscription_data: {
-  metadata: { ... },
-},
-// нов параметр:
-invoice_creation: {
-  enabled: true, // не е нужно за subscription mode — invoices се създават автоматично
-},
+### 3. "Забравена парола?" линк в Login страницата
+В `src/pages/Login.tsx`, под полето за парола (вляво/вдясно от бутона "Вход"):
+```tsx
+<Link to="/forgot-password" className="text-sm text-primary hover:underline">
+  {t("auth.forgotPassword")}
+</Link>
 ```
-И за самия customer ще се уверя, че email-ът е винаги асоцииран (вече е, чрез `customers.create({ email })`).
 
-Освен това в Stripe Dashboard → **Settings → Billing → Subscriptions and emails** трябва да включиш:
-- **"Email customers about successful payments"** ✅
-- **"Email customers about failed payments"** ✅ (препоръчително)
+### 4. Допълнителни преводи (BG/EN)
+В `src/contexts/LanguageContext.tsx`:
+- `auth.forgotTitle` — "Забравена парола"
+- `auth.forgotDesc` — "Въведете имейла си, ще ви изпратим линк за нулиране"
+- `auth.sendResetLink` — "Изпрати линк за нулиране"
+- `auth.resetEmailSent` — "Изпратихме ви имейл с инструкции (ако акаунтът съществува)"
+- `auth.backToLogin` — "Назад към вход"
 
----
+## Как ще работи (end-to-end)
 
-## Технически детайли (за справка)
+1. Потребител натиска "Забравена парола?" в Login → отива на `/forgot-password`
+2. Въвежда email → `supabase.auth.resetPasswordForEmail()` се извиква
+3. Supabase Auth тригерва `auth-email-hook` → enqueue в `auth_emails` queue
+4. `process-email-queue` cron job (на 5 сек) → изпраща branded recovery имейл от `noreply@daribotevgrad.notify.miroplayground.online`
+5. Потребителят натиска "Нулиране на парола" в имейла → отива на `/reset-password`
+6. Въвежда нова парола → готово ✓
 
-- Файлове за промяна: `supabase/functions/create-checkout/index.ts`, `supabase/functions/create-subscription/index.ts`
-- След промените edge functions се деплойват автоматично.
-- Няма промени в база данни, UI или други функции.
-- Не се променя никаква друга логика.
+## Какво НЕ се променя
+- Шаблоните за имейли (вече branded)
+- Auth hook logic
+- ResetPassword страницата (вече работи)
+- Регистрация / Google login
+- Друг UI или функционалност
 
----
+## Файлове
 
-## Кратко обобщение
+**Нови:**
+- `src/pages/ForgotPassword.tsx`
 
-| Действие | Кой го прави |
-|---|---|
-| Включи "Successful payments" в Stripe → Settings → Emails | **Ти** |
-| Включи "Email customers about successful payments" в Settings → Billing | **Ти** (за абонаменти) |
-| Добави `receipt_email` в create-checkout | Аз |
-| Уверя се, че subscription customer има email | Аз (вече е така, ще проверя) |
+**Редактирани:**
+- `src/App.tsx` (нов route)
+- `src/pages/Login.tsx` (добавяне на линк)
+- `src/contexts/LanguageContext.tsx` (нови преводи)
 
-Кажи "давай" и ще направя промените в кода. Настройките в Stripe Dashboard трябва да ги включиш ти, защото нямам достъп до твоя Stripe акаунт.
+**От твоя страна не се изисква нищо** — не трябва да настройваш нищо в Stripe/Supabase/DNS. Всичко е готово, само трябва да одобриш плана.
