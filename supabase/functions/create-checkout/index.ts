@@ -84,6 +84,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
+      payment_method_types: ["card"],
       metadata: {
         campaign_id: campaignId,
         donor_id: user?.id || "",
