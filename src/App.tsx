@@ -16,6 +16,7 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 import Profile from "./pages/Profile";
 import RequireAuth from "@/components/auth/RequireAuth";
 import CreateCampaign from "./pages/CreateCampaign";
@@ -55,6 +56,7 @@ const App = () => (
             <Route element={<Layout><Login /></Layout>} path="/login" />
             <Route element={<Layout><Register /></Layout>} path="/register" />
             <Route element={<Layout><ResetPassword /></Layout>} path="/reset-password" />
+            <Route element={<Layout><ForgotPassword /></Layout>} path="/forgot-password" />
             <Route element={<Layout><PaymentSuccess /></Layout>} path="/payment-success" />
             <Route element={<Layout><Unsubscribe /></Layout>} path="/unsubscribe" />
 
