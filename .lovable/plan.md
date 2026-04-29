@@ -217,6 +217,7 @@ Step-by-step за нулев VPS:
 2. **Чат 2 ✅:** Campaigns + donations + comments + admin routes (+ Stripe webhook + Socket.io broadcast)
 3. **Чат 3 ✅:** Email система (Resend + BullMQ + 7 React Email темплейти) + uploads (Multer + Sharp) + Resend webhook
 4. **Чат 4 ✅:** Frontend skeleton — копиран целият `src/`, изтрити Supabase интеграции, нов `lib/api-client.ts` (auto-refresh JWT), `lib/socket-client.ts`, пренаписан `AuthContext` (REST + Google OAuth redirect), пренаписан `useRealtimeSync` (Socket.io rooms) + нов `useCampaignRealtime`. `package.json` обновен (`socket.io-client` добавен, `@supabase/supabase-js` премахнат). ZIP: `dari-botevgrad-vps-chat4.zip`
+5. **Чат 5 ✅:** Frontend file-by-file rewrite (частично) — мигрирани **всички 6 hooks**, **7 components** (VoteButtons, CampaignCard/Comments/Documents/Updates/VersionHistory, DonateButton, ProfileRevisions), и **8 pages** (About, ForgotPassword, ResetPassword, Unsubscribe, CreateCampaign, AdminContacts, AdminDashboard, AdminDonations). Добавен `lib/uploads.ts` helper. Останалите **8 файла** са започнати от codemod (има `// TODO[VPS-migration]` header и cheat-sheet в `frontend/README.md`) — ще се довършат в Чат 6 заедно с deploy. ZIP: `dari-botevgrad-vps-chat5.zip`
 
 ### Чат 3 — какво е готово
 - `services/email-queue.ts` — BullMQ queues (auth + standard) с idempotency
