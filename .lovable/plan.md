@@ -215,7 +215,20 @@ Step-by-step за нулев VPS:
 
 1. **Чат 1 ✅:** Backend skeleton + DB schema + auth + middleware
 2. **Чат 2 ✅:** Campaigns + donations + comments + admin routes (+ Stripe webhook + Socket.io broadcast)
-3. **Чат 3:** Email система (Resend + BullMQ + темплейти) + uploads (Multer + Sharp) + email webhooks
+3. **Чат 3 ✅:** Email система (Resend + BullMQ + 7 React Email темплейти) + uploads (Multer + Sharp) + Resend webhook
+
+### Чат 3 — какво е готово
+- `services/email-queue.ts` — BullMQ queues (auth + standard) с idempotency
+- `services/email-renderer.ts` — React Email → HTML/text
+- `services/email-service.ts` — `sendTemplatedEmail()` API
+- `email-templates/` — `_layout`, verify-email, password-reset, welcome, contact-confirmation, campaign-approved, campaign-rejected, donation-receipt + registry
+- `workers/email-worker.ts` — пълен BullMQ worker с retry, suppressed_emails check, log
+- `routes/uploads.ts` — Multer + Sharp; buckets: campaign-images (+thumbs), documents, videos, avatars
+- `routes/resend-webhook.ts` — Svix signature verify, bounces/complaints → suppressed_emails
+- Email triggers свързани в: contact form, admin approve/reject campaign, donations webhook (one-time + recurring receipt)
+- `auth.ts` мигриран от стария `sendEmail` към `sendTemplatedEmail`
+- `index.ts`: Resend webhook също mount-нат преди json parser
+- ZIP: `dari-botevgrad-vps-chat3.zip`
 4. **Чат 4:** Frontend api-client + AuthContext + realtime hook (Socket.io client)
 5. **Чат 5:** Frontend file-by-file rewrite (страница по страница)
 6. **Чат 6:** Deploy скриптове + Nginx + документация + финален ZIP
