@@ -130,10 +130,24 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error: any) {
-    console.error("[create-subscription] Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("[create-subscription] Error:", error);
+    const SAFE = new Set([
+      "Invalid campaign or amount",
+      "Invalid interval. Use 'month' or 'year'",
+      "Трябва да сте влезли в профила си за абонамент",
+      "Campaign not found",
+      "Campaign is not active",
+      "Campaign does not support subscriptions",
+      "Вече имате активен абонамент за тази кампания",
+    ]);
+    const msg = error?.message;
+    const isSafe = typeof msg === "string" && SAFE.has(msg);
+    const status = isSafe
+      ? (msg === "Трябва да сте влезли в профила си за абонамент" ? 401 : 400)
+      : 500;
+    return new Response(
+      JSON.stringify({ error: isSafe ? msg : "Възникна неочаквана грешка. Моля опитайте отново." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status }
+    );
   }
 });

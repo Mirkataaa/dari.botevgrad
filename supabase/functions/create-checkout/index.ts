@@ -123,11 +123,18 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
-    console.error("[create-checkout] Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+  } catch (error: any) {
+    console.error("[create-checkout] Error:", error);
+    const SAFE = new Set([
+      "Invalid campaign or amount",
+      "Campaign not found",
+      "Campaign is not active",
+    ]);
+    const msg = error?.message;
+    const isSafe = typeof msg === "string" && SAFE.has(msg);
+    return new Response(
+      JSON.stringify({ error: isSafe ? msg : "Възникна неочаквана грешка. Моля опитайте отново." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: isSafe ? 400 : 500 }
+    );
   }
 });

@@ -67,10 +67,21 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error: any) {
-    console.error("[cancel-subscription] Error:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    console.error("[cancel-subscription] Error:", error);
+    const SAFE = new Set([
+      "Missing subscriptionId",
+      "Unauthorized",
+      "Subscription not found",
+      "Not authorized to cancel this subscription",
+    ]);
+    const msg = error?.message;
+    const isSafe = typeof msg === "string" && SAFE.has(msg);
+    const status = isSafe
+      ? (msg === "Unauthorized" || msg === "Not authorized to cancel this subscription" ? 401 : 400)
+      : 500;
+    return new Response(
+      JSON.stringify({ error: isSafe ? msg : "Възникна неочаквана грешка. Моля опитайте отново." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status }
+    );
   }
 });
