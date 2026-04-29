@@ -1,76 +1,95 @@
-## Текущо състояние
+# Security Hardening Plan
 
-**Добра новина: цялата email infrastructure за recovery вече е настроена и работи!**
+Three areas to fix, all backwards-compatible — no UI or API changes.
 
-- ✅ Домейн `daribotevgrad.notify.miroplayground.online` е верифициран
-- ✅ `auth-email-hook` edge function е deploy-ната и enqueue-ва recovery имейли
-- ✅ `recovery.tsx` шаблонът съществува (на български, brand styled)
-- ✅ Страницата `/reset-password` вече е създадена и работи (`src/pages/ResetPassword.tsx`)
-- ✅ Превод `auth.forgotPassword` = "Забравена парола?" вече е дефиниран
+---
 
-**Какво липсва:** Само UI входната точка — потребителят няма откъде да поиска email за нулиране на паролата. Текущата Login страница няма "Забравена парола?" линк.
+## 1. Edge function error handling
 
-## Какво ще направим
+**Files:** `create-checkout/index.ts`, `create-subscription/index.ts`, `cancel-subscription/index.ts`
 
-### 1. Нова страница `/forgot-password`
-Създаване на `src/pages/ForgotPassword.tsx`:
-- Форма с едно поле за email
-- При submit извиква:
-  ```ts
-  supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`
-  })
-  ```
-- Показва toast съобщение "Изпратихме ви имейл с линк за нулиране на паролата" (без значение дали имейлът съществува — за security)
-- Линк обратно към `/login`
-- Същият branded дизайн както Login/Register (Card, KeyRound icon)
+Currently every `catch` returns `error.message` directly to the client. We will:
 
-### 2. Регистриране на route в `src/App.tsx`
-Добавяне на:
-```tsx
-<Route element={<Layout><ForgotPassword /></Layout>} path="/forgot-password" />
+- Define a small set of **known, safe-to-show** error messages (validation, "Campaign not found", "Trябва да сте влезли", "Вече имате активен абонамент", "Invalid amount", etc.) — these are already user-facing in Bulgarian and the UI relies on them.
+- For any other thrown error (Stripe API errors, DB errors, JSON parse, network), log the full error server-side via `console.error` and return a generic `"Възникна неочаквана грешка. Моля опитайте отново."` with status 500.
+- Keep status 400 for validation errors, 401 for auth errors, 500 for unexpected.
+
+Pattern:
+```ts
+const SAFE_MESSAGES = new Set([
+  "Invalid campaign or amount",
+  "Campaign not found",
+  "Campaign is not active",
+  // ...the curated list per function
+]);
+
+catch (error: any) {
+  console.error("[fn-name] Error:", error);
+  const msg = SAFE_MESSAGES.has(error?.message) ? error.message
+    : "Възникна неочаквана грешка. Моля опитайте отново.";
+  const status = SAFE_MESSAGES.has(error?.message) ? 400 : 500;
+  return new Response(JSON.stringify({ error: msg }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" }, status,
+  });
+}
 ```
 
-### 3. "Забравена парола?" линк в Login страницата
-В `src/pages/Login.tsx`, под полето за парола (вляво/вдясно от бутона "Вход"):
-```tsx
-<Link to="/forgot-password" className="text-sm text-primary hover:underline">
-  {t("auth.forgotPassword")}
-</Link>
-```
+This preserves all current toasts shown by `DonateButton` and the subscription UI because those known strings are still passed through.
 
-### 4. Допълнителни преводи (BG/EN)
-В `src/contexts/LanguageContext.tsx`:
-- `auth.forgotTitle` — "Забравена парола"
-- `auth.forgotDesc` — "Въведете имейла си, ще ви изпратим линк за нулиране"
-- `auth.sendResetLink` — "Изпрати линк за нулиране"
-- `auth.resetEmailSent` — "Изпратихме ви имейл с инструкции (ако акаунтът съществува)"
-- `auth.backToLogin` — "Назад към вход"
+---
 
-## Как ще работи (end-to-end)
+## 2. Storage ownership validation
 
-1. Потребител натиска "Забравена парола?" в Login → отива на `/forgot-password`
-2. Въвежда email → `supabase.auth.resetPasswordForEmail()` се извиква
-3. Supabase Auth тригерва `auth-email-hook` → enqueue в `auth_emails` queue
-4. `process-email-queue` cron job (на 5 сек) → изпраща branded recovery имейл от `noreply@daribotevgrad.notify.miroplayground.online`
-5. Потребителят натиска "Нулиране на парола" в имейла → отива на `/reset-password`
-6. Въвежда нова парола → готово ✓
+**Important context:** The actual upload code stores files at `{auth.uid()}/timestamp-random.ext` (verified via `storage.objects` rows). The first folder segment is the **uploader's user_id**, not a campaign_id. So the scanner's literal suggestion ("extract campaign_id from path") doesn't apply — there is no campaign_id in the path.
 
-## Какво НЕ се променя
-- Шаблоните за имейли (вече branded)
-- Auth hook logic
-- ResetPassword страницата (вече работи)
-- Регистрация / Google login
-- Друг UI или функционалност
+What the existing policies cover:
+- `campaign-images`: INSERT/DELETE checked against folder=auth.uid(); **UPDATE policy missing**
+- `campaign-documents`: INSERT/DELETE checked; **UPDATE policy missing**
+- `campaign-videos`: INSERT/UPDATE/DELETE all check folder=auth.uid() ✓
 
-## Файлове
+Migration will:
 
-**Нови:**
-- `src/pages/ForgotPassword.tsx`
+1. Add missing **UPDATE** policies for `campaign-images` and `campaign-documents` (folder must equal `auth.uid()` OR admin) — closes the gap the scanner flagged.
+2. Tighten existing INSERT/UPDATE/DELETE policies on all three buckets so the user must:
+   - own the folder (`foldername[1] = auth.uid()::text`), AND
+   - have at least one campaign they created (prevents random authenticated users from littering buckets even if they never ran a campaign).
+3. Admins keep full access via `has_role(auth.uid(), 'admin')`.
+4. Public SELECT for `campaign-images` and `campaign-videos` stays unchanged (buckets are public).
 
-**Редактирани:**
-- `src/App.tsx` (нов route)
-- `src/pages/Login.tsx` (добавяне на линк)
-- `src/contexts/LanguageContext.tsx` (нови преводи)
+Reads of campaign-documents stay restricted to authenticated users (current behavior).
 
-**От твоя страна не се изисква нищо** — не трябва да настройваш нищо в Stripe/Supabase/DNS. Всичко е готово, само трябва да одобриш плана.
+---
+
+## 3. SECURITY DEFINER function grants
+
+Audit of the 11 SECURITY DEFINER functions in `public`:
+
+| Function | Used by | Action |
+|---|---|---|
+| `has_role` | RLS policies (server context) | Revoke from anon; keep for authenticated (RLS needs it) |
+| `handle_new_user` | Auth trigger only | Revoke from anon, authenticated, public |
+| `check_campaign_completion` | Trigger | Revoke from anon, authenticated, public |
+| `check_campaign_spam` | Trigger | Revoke from anon, authenticated, public |
+| `log_campaign_version` | Trigger | Revoke from anon, authenticated, public |
+| `close_expired_campaigns` | Cron/admin only | Revoke from anon, authenticated, public; grant to service_role |
+| `mark_review_notifications_seen` | Called from client by authenticated users | Keep authenticated; revoke from anon. Already checks `auth.uid()` internally ✓ |
+| `enqueue_email`, `delete_email`, `read_email_batch`, `move_to_dlq` | Edge functions using service_role | Revoke from anon, authenticated; grant to service_role |
+
+All trigger-only functions don't need any role grant — triggers run as table owner regardless. Revoking is safe.
+
+`mark_review_notifications_seen` already filters by `submitted_by = auth.uid()` and `created_by = auth.uid()` inside the body, so it cannot be abused even though it stays callable by authenticated users.
+
+---
+
+## Migration files
+
+One SQL migration containing:
+- New/updated storage RLS policies (drop+recreate for the affected ones)
+- `REVOKE EXECUTE` and selective `GRANT EXECUTE` on the 11 functions
+
+## Verification
+
+After applying:
+- Re-run the security scan; the three findings (`raw_error_msgs`, `campaign_videos_no_update_check`, both SECURITY DEFINER lints) should clear.
+- Manual sanity: a logged-in donor can still donate (one-time + subscription); a campaign creator can still upload images/docs/videos and edit campaigns; admins can still moderate.
+- Update `mem://` security memory to record the per-user folder ownership model so future scans/agents don't re-suggest the campaign_id-in-path approach.
