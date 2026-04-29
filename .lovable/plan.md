@@ -216,6 +216,7 @@ Step-by-step за нулев VPS:
 1. **Чат 1 ✅:** Backend skeleton + DB schema + auth + middleware
 2. **Чат 2 ✅:** Campaigns + donations + comments + admin routes (+ Stripe webhook + Socket.io broadcast)
 3. **Чат 3 ✅:** Email система (Resend + BullMQ + 7 React Email темплейти) + uploads (Multer + Sharp) + Resend webhook
+4. **Чат 4 ✅:** Frontend skeleton — копиран целият `src/`, изтрити Supabase интеграции, нов `lib/api-client.ts` (auto-refresh JWT), `lib/socket-client.ts`, пренаписан `AuthContext` (REST + Google OAuth redirect), пренаписан `useRealtimeSync` (Socket.io rooms) + нов `useCampaignRealtime`. `package.json` обновен (`socket.io-client` добавен, `@supabase/supabase-js` премахнат). ZIP: `dari-botevgrad-vps-chat4.zip`
 
 ### Чат 3 — какво е готово
 - `services/email-queue.ts` — BullMQ queues (auth + standard) с idempotency
