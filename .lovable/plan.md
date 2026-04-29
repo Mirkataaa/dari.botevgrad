@@ -213,12 +213,29 @@ Step-by-step за нулев VPS:
 
 Имай предвид: пакетът ще има **много код** (~5000-7000 реда). Lovable build mode може да го свърши, но ще искам да го направим на **части в няколко чата**, за да не претоварваме един context. Предлагам разбивка:
 
-1. **Чат 1:** Backend skeleton + DB schema + auth + middleware
-2. **Чат 2:** Campaigns + donations + comments + admin routes
-3. **Чат 3:** Stripe + Email + Uploads + Socket.io
-4. **Чат 4:** Frontend api-client + AuthContext + realtime hook
+1. **Чат 1 ✅:** Backend skeleton + DB schema + auth + middleware
+2. **Чат 2 ✅:** Campaigns + donations + comments + admin routes (+ Stripe webhook + Socket.io broadcast)
+3. **Чат 3:** Email система (Resend + BullMQ + темплейти) + uploads (Multer + Sharp) + email webhooks
+4. **Чат 4:** Frontend api-client + AuthContext + realtime hook (Socket.io client)
 5. **Чат 5:** Frontend file-by-file rewrite (страница по страница)
-6. **Чат 6:** Deploy скриптове + Nginx + документация + ZIP
+6. **Чат 6:** Deploy скриптове + Nginx + документация + финален ZIP
+
+### Чат 2 — какво е готово
+- `db/pool.ts` — pg Pool + transaction helper
+- `lib/schemas.ts` — Zod валидация за всички routes
+- `lib/realtime.ts` — Socket.io broadcast helper
+- `middleware/validate.ts` — generic body/query валидатор
+- Routes: `campaigns`, `comments`, `updates`, `donations`, `stripe-webhook`, `contact`, `admin`, `stats`, `profiles`
+- Schema: добавена таблица `verified_organizations`
+- `index.ts`: Stripe webhook mount-нат **преди** `express.json()` (raw body); Socket.io subscribe/unsubscribe на campaign rooms
+
+### Чат 2 — функционални особености
+- **Anti-spam**: trigger от schema-та връща 429 при >10 кампании за 24ч
+- **RLS заместване**: всички "owner-or-admin" проверки са на ниво route handler
+- **Idempotency**: donations имат UNIQUE индекс на `stripe_session_id` и `stripe_payment_id`
+- **Recurring**: webhook създава subscription при checkout; всеки `invoice.paid` добавя donation
+- **Drafts**: при approve копираме полета върху `campaigns`; trigger `trg_log_campaign_version` snapshot-ва старата версия
+- **Status visibility**: pending/rejected/archived кампании се виждат само от собственика/админа
 
 ---
 
