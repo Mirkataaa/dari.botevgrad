@@ -1,71 +1,232 @@
-## Проблем
+# Самостоятелен VPS пакет — отделен от текущия Lovable проект
 
-След вчерашния security hardening публичната част на сайта спря да работи за нелогнати потребители (виждаш `permission denied for function has_role` в network таба, статус 401 за `/campaigns` и `/campaigns?status=eq.active`).
+## Цел
 
-## Причина
+Създаваме **напълно отделен deployable пакет** в `/mnt/documents/dari-botevgrad-vps/`, който можеш да свалиш като ZIP и да качиш на VPS-а. Текущият Lovable проект **остава непокътнат** и продължава да работи на `dari-botevgrad.lovable.app` като production / fallback / staging.
 
-Migration-ът `20260429094609` направи:
-```sql
-REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM PUBLIC, anon;
+## Подход
+
+Пакетът ще е **monorepo** с две приложения:
+
+```text
+dari-botevgrad-vps/
+├── README.md                    # Пълни deploy инструкции на български
+├── DEPLOYMENT.md                # Step-by-step VPS setup
+├── docker-compose.yml           # (опционално) PostgreSQL + Redis за лесен start
+│
+├── backend/                     # Express + TypeScript API
+│   ├── src/
+│   │   ├── index.ts             # Express app entry
+│   │   ├── config/              # env, db pool, redis
+│   │   ├── db/
+│   │   │   ├── schema.sql       # Consolidated initial schema
+│   │   │   ├── migrations/      # node-pg-migrate files
+│   │   │   └── seed.sql         # Тестови данни (опц.)
+│   │   ├── middleware/          # auth, errorHandler, rateLimit, validate
+│   │   ├── routes/              # auth, campaigns, donations, comments, admin, etc.
+│   │   ├── services/            # stripe, email (Resend), uploads, realtime
+│   │   ├── workers/             # email-queue worker (BullMQ)
+│   │   ├── email-templates/     # Копия от текущите React Email темплейти
+│   │   └── lib/                 # utils, validators (Zod schemas)
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── .env.example
+│   └── ecosystem.config.js      # PM2 cluster config
+│
+├── frontend/                    # Копие на текущия React app, адаптиран
+│   ├── src/                     # Същият UI код, без supabase imports
+│   │   ├── lib/
+│   │   │   ├── api-client.ts    # Заменя supabase клиента (typed fetch)
+│   │   │   └── socket-client.ts # Socket.io client (заменя realtime)
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx  # Пренаписан да използва API
+│   │   └── ... (всички UI компоненти, страници — копирани as-is)
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── .env.example
+│
+└── deploy/
+    ├── nginx.conf               # SPA + /api proxy + websocket + SSL
+    ├── systemd/                 # Service files (алтернатива на PM2)
+    ├── scripts/
+    │   ├── setup-vps.sh         # Първоначална инсталация
+    │   ├── deploy.sh            # Pull + build + restart
+    │   └── backup-db.sh         # Daily pg_dump cron
+    └── certbot-setup.md         # Let's Encrypt инструкции
 ```
 
-Но `has_role()` се извиква **вътре в RLS политиките** на множество таблици с публичен SELECT:
-- `campaigns` → политика "Campaigns viewable by everyone" (`... OR has_role(auth.uid(), 'admin')`)
-- `comments`, `comment_votes`, `update_votes`, `campaign_updates` (публични SELECT, но DELETE/UPDATE политики ползват `has_role`)
-- `public_donations` view (security invoker → пада до `donations` RLS, която също вика `has_role`)
+---
 
-Когато `anon` отвори главната страница, Postgres изпълнява политиката, опитва да извика `has_role` → `42501 permission denied` → целият SELECT гърми с 401.
+## Какво пишем в backend/
 
-Затова не се виждат: активни кампании, завършени кампании, общо събрани средства, статистики, hero секцията.
+### 1. Database (`db/schema.sql`)
+Извличам текущата схема от Supabase, премахвам Supabase-specific неща:
+- `auth.users` → собствена `users` таблица (email, password_hash, email_verified_at, google_id)
+- Премахвам всички RLS policies (заместени с Express middleware authorization)
+- Премахвам `pgmq` (заместено с BullMQ + Redis)
+- Запазвам всички триггери (`check_campaign_completion`, `check_campaign_spam`, `log_campaign_version`)
+- Запазвам `has_role` функцията и `user_roles` таблицата
 
-## Решение
+### 2. Express endpoints (огледално на текущата функционалност)
 
-`has_role(uuid, app_role)` е `SECURITY DEFINER` функция, която приема `_user_id` и връща `boolean` от вътрешната таблица `user_roles`. Тя:
-- НЕ приема свободен SQL вход
-- НЕ връща чужди данни — само `true/false`
-- За `anon` `auth.uid()` е `NULL` → винаги връща `false`
-- Е стандартна Supabase best-practice функция, проектирана да е достъпна за RLS evaluation
+| Route | Заменя |
+|---|---|
+| `POST /api/auth/register`, `/login`, `/refresh`, `/logout` | `supabase.auth.*` |
+| `GET /api/auth/google`, `/google/callback` | Google OAuth |
+| `POST /api/auth/forgot-password`, `/reset-password` | Recovery emails |
+| `POST /api/auth/verify-email` | Signup confirmation |
+| `GET/POST/PATCH/DELETE /api/campaigns` | `supabase.from('campaigns')` |
+| `GET/POST /api/campaigns/:id/comments` + votes | comments + comment_votes |
+| `GET/POST /api/campaigns/:id/updates` + votes | campaign_updates |
+| `POST /api/donations/checkout` | `create-checkout` edge function |
+| `POST /api/subscriptions`, `DELETE /api/subscriptions/:id` | `create-subscription`, `cancel-subscription` |
+| `POST /api/stripe/webhook` | `stripe-webhook` |
+| `POST /api/uploads/:bucket` | `supabase.storage` |
+| `GET /api/admin/*` | Admin pages |
+| `POST /api/contact` | Contact form |
+| `GET /api/stats/total-donations` | Public stats |
+| `POST /api/webhooks/email-suppression` | `handle-email-suppression` |
+| `GET/POST /api/unsubscribe` | `handle-email-unsubscribe` |
+| `GET /og/:campaignId.png` | `og-image` |
 
-Безопасно е да я върнем достъпна за `anon`. Това е стандартът, препоръчан от Supabase docs за role-based RLS.
+### 3. Email система
+- `services/email.ts` — Resend SDK wrapper
+- `workers/email-queue.ts` — BullMQ worker (стартира със собствен PM2 process)
+- React Email темплейтите се копират 1:1 от `supabase/functions/_shared/`
+- Confirmation/recovery emails се пращат директно от auth routes (без webhook hop)
 
-## Стъпки
+### 4. Realtime
+- Socket.io attached към Express
+- Channels: `campaign:{id}`, `admin:notifications`
+- Backend emit-ва събития след всеки relevant write
 
-### 1. Нов migration: възстановяване на `EXECUTE` за `has_role`
+### 5. File uploads
+- Multer + sharp (resize за images)
+- Storage: `/var/www/uploads/{bucket}/{user_id}/{uuid}.{ext}`
+- Nginx serve-ва public buckets директно
+- Private bucket (`campaign-documents`) минава през Express auth middleware
 
-```sql
-GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO anon, authenticated;
-```
+### 6. Authorization middleware (заменя RLS)
+- `requireAuth`, `requireRole('admin')`, `requireOwnership(resource)`
+- Всеки route проверява permissions преди query
+- Pattern: same logic като RLS политиките, но в TypeScript
 
-Това веднага оправя:
-- Зареждането на кампании (активни/завършени) за нелогнати
-- Статистиките на главната страница (общо събрани средства, брой кампании, брой дарения)
-- Публичното виждане на коментари, updates, votes
-- Дарения история (`public_donations`)
+---
 
-### 2. Verification чрез database linter
+## Какво пишем в frontend/
 
-Стартираме `supabase--linter` след миграцията, за да потвърдим, че няма нови security warnings и че всичко друго от вчерашния hardening остава непроменено:
-- Storage policies за `campaign-images`/`campaign-documents`/`campaign-videos` остават strict (owner-based)
-- Internal trigger functions (`handle_new_user`, `check_campaign_spam`, `log_campaign_version`, `check_campaign_completion`) остават revoked от `anon`/`authenticated` — те се викат само от тригери и не трябва да се извикват директно
-- Email queue functions остават `service_role`-only
-- Error masking в Edge Functions остава непроменен
+**Копираме целия текущ `src/` без следните файлове:**
+- `src/integrations/supabase/` — изтрит
+- `src/integrations/lovable/` — изтрит
 
-### 3. Обновяване на security memory
+**Заменяме:**
+- Нов `src/lib/api-client.ts` — typed fetch с auto-refresh на JWT
+- Нов `src/lib/socket-client.ts` — Socket.io client
+- Пренаписан `src/contexts/AuthContext.tsx` — използва `/api/auth/*`
+- Пренаписан `src/hooks/useRealtimeSync.ts` — слуша Socket.io events
 
-Документираме защо `has_role` ТРЯБВА да е достъпна за `anon`:
-> `has_role(uuid, app_role)` е SECURITY DEFINER функция, използвана в RLS политики на публично четими таблици. ТРЯБВА да остане `EXECUTE` за `anon` и `authenticated` — иначе всеки публичен SELECT ще се проваля с 42501. Връща само boolean от `user_roles` и не разкрива чужди данни.
+**Във всеки от 27-те файла, които използват `supabase`:**
+- `supabase.from('table').select(...)` → `api.get('/api/table?...')`
+- `supabase.from('table').insert(...)` → `api.post('/api/table', body)`
+- `supabase.auth.*` → `auth.*` от новия context
+- `supabase.storage.*` → `api.upload(file, bucket)`
+- `supabase.channel(...)` → `socket.on(...)`
 
-## Какво НЕ променяме
+UI компонентите (Tailwind, shadcn, layouts, страници) **не се променят** — само data layer-ът.
 
-- Storage policies (campaign-images, documents, videos) — остават с owner validation
-- Error masking в `create-checkout`, `create-subscription`, `cancel-subscription` — остава
-- Revoke на internal trigger/email функции от `anon`/`authenticated` — остава
-- RLS политики на която и да е таблица — без промяна
+---
 
-## Резултат
+## Технически избори по подразбиране
 
-След прилагането на миграцията:
-- Главна страница, /active, /completed, /campaign/:id зареждат за нелогнати потребители
-- Статистиките (събрани средства, брой дарения) се виждат отново
-- Публичната история на дарения работи
-- Цялата сигурност от вчерашния hardening остава непокътната
+Освен ако не предпочиташ друго:
+- **Express 4** (стандарт, най-много примери онлайн)
+- **Drizzle ORM** (type-safe, близък до SQL, лесен за debug)
+- **node-pg-migrate** за миграции
+- **Passport.js** + **passport-google-oauth20**
+- **bcrypt** (10 rounds) за пароли
+- **jsonwebtoken** — access 15min + refresh 7d (httpOnly cookie)
+- **Socket.io 4** за realtime
+- **BullMQ** + **Redis 7** за email queue
+- **Multer** + **sharp** за uploads
+- **Zod** за валидация
+- **Pino** за logging
+- **PM2** cluster mode (1 web process per CPU + 1 worker process)
+- **Nginx** като reverse proxy + SPA serve + SSL
+- **PostgreSQL 16**
+
+---
+
+## Документация в пакета
+
+### `README.md`
+- Какво е проектът, архитектура диаграма
+- Локален dev setup (docker-compose up + npm run dev)
+- Линк към DEPLOYMENT.md
+
+### `DEPLOYMENT.md` (на български)
+Step-by-step за нулев VPS:
+1. SSH + основна сигурност (ufw, fail2ban, SSH keys)
+2. Инсталация: Node.js 20, PostgreSQL 16, Redis 7, Nginx, certbot, PM2
+3. Създаване на DB user + import на `schema.sql`
+4. Клониране на repo + `npm install` в backend и frontend
+5. `.env` setup (с обяснение за всяка променлива)
+6. Build на frontend (`npm run build` → `frontend/dist/`)
+7. PM2 start + save + startup
+8. Nginx конфиг (копиране от `deploy/nginx.conf`, замяна на домейн)
+9. Certbot за SSL
+10. Stripe webhook URL update в Stripe Dashboard
+11. Resend domain verification (вече настроено)
+12. Cron за backups
+13. Migration на данни от Supabase (export → import script)
+
+### `MIGRATION.md`
+- Как да експортираш данните от текущия Supabase: `pg_dump` команди
+- Как да ги импортираш в новата база
+- Как да трансформираш Supabase auth users → новата `users` таблица (с password reset email до всички)
+- Как да преместиш файловете от Supabase Storage към `/var/www/uploads/`
+
+---
+
+## Какво НЕ включваме (за да не се раздуе пакетът)
+
+- Не пишем тестове (можеш да добавиш по-късно)
+- Не правим Docker production setup (PM2 + native install е по-просто за VPS)
+- Не правим CI/CD pipeline (можеш да добавиш GitHub Actions по-късно)
+- Не правим admin dashboard за server monitoring (PM2 има вграден monit)
+
+---
+
+## Оценка
+
+| Стъпка | Време |
+|---|---|
+| Backend boilerplate + auth + middleware | 1 ден |
+| Schema export + Drizzle setup | 0.5 ден |
+| Campaigns/donations/comments routes | 1 ден |
+| Stripe + webhooks | 0.5 ден |
+| Email service + worker | 0.5 ден |
+| Uploads + Socket.io | 0.5 ден |
+| Frontend api-client + AuthContext rewrite | 0.5 ден |
+| Frontend file-by-file rewrite (27 файла) | 1.5 дни |
+| Nginx/PM2/deploy scripts + docs | 0.5 ден |
+| **Общо в Lovable build mode** | **~6 дни AI работа** |
+
+Имай предвид: пакетът ще има **много код** (~5000-7000 реда). Lovable build mode може да го свърши, но ще искам да го направим на **части в няколко чата**, за да не претоварваме един context. Предлагам разбивка:
+
+1. **Чат 1:** Backend skeleton + DB schema + auth + middleware
+2. **Чат 2:** Campaigns + donations + comments + admin routes
+3. **Чат 3:** Stripe + Email + Uploads + Socket.io
+4. **Чат 4:** Frontend api-client + AuthContext + realtime hook
+5. **Чат 5:** Frontend file-by-file rewrite (страница по страница)
+6. **Чат 6:** Deploy скриптове + Nginx + документация + ZIP
+
+---
+
+## Въпроси преди да започнем
+
+1. **VPS specs?** (RAM/CPU/диск, OS — Ubuntu/Debian?). Влияе на дали препоръчвам Docker или native install.
+2. **Домейн?** Имаш ли вече или ще регистрираш? (нужно за Nginx config + SSL + Stripe webhook)
+3. **ORM избор:** Drizzle (препоръка), Kysely, или raw `pg`?
+4. **Realtime приоритет:** наистина ли ти трябва (донации да се обновяват live)? Ако не — можем да пропуснем Socket.io и да правим polling, което е сериозно опростяване.
+
+След като одобриш плана и отговориш, започвам **Чат 1** — backend skeleton с auth система и DB schema. Ще генерирам файловете в `/mnt/documents/dari-botevgrad-vps/` и ще ти дам ZIP за download в края на всеки чат.
