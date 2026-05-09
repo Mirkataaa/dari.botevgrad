@@ -40,6 +40,33 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
+  // SECURITY: Restrict to server-side callers only (service_role JWT).
+  // The gateway already verified the JWT signature (verify_jwt = true),
+  // but the public anon key is also a valid JWT — we must additionally
+  // confirm the role to prevent abuse from the browser bundle.
+  {
+    const authHeader = req.headers.get('Authorization') ?? ''
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+    let role: string | undefined
+    try {
+      const segment = token.split('.')[1] ?? ''
+      const padded = segment + '='.repeat((4 - (segment.length % 4)) % 4)
+      const payload = JSON.parse(
+        atob(padded.replace(/-/g, '+').replace(/_/g, '/'))
+      )
+      role = payload.role
+    } catch {
+      // ignore — handled below
+    }
+    if (role !== 'service_role') {
+      console.warn('Forbidden call to send-transactional-email', { role })
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+  }
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
