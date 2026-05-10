@@ -1,57 +1,115 @@
-## Проблем
+# План: Експорт на auth.users от Lovable Cloud
 
-`send-transactional-email` в момента приема валиден anon JWT (`verify_jwt = true`), което означава че всеки с публичния anon ключ (видим в браузър бъндъла) може да извика функцията и да изпрати имейл от нашия домейн до произволен адрес с фалшиви данни (`templateData.amount`, `campaignTitle` и т.н.). Това е вектор за phishing/spam и заплашва репутацията на изпращащия домейн.
+В базата има **8 потребителя**. Целта: безопасно ги извличаме като JSON (с bcrypt хешовете на паролите), сваляш файла, после ще ги import-нем в self-hosted Supabase.
 
-## Решение
+---
 
-Функцията трябва да е извикваема **само от сървър-страна** (други edge функции като `stripe-webhook`, бъдещи DB тригери), никога от браузъра с anon ключ.
+## Стъпка 1 — Временен edge function `export-auth-users`
 
-### Промени
+Създавам нов edge function `supabase/functions/export-auth-users/index.ts` със следната логика:
 
-**1. `supabase/functions/send-transactional-email/index.ts`**
+- **Authentication**: Приема Bearer token, проверява че идва от **service_role** (както направихме за `send-transactional-email`). Никой друг не може да го извика.
+- **Допълнителна защита**: Изисква и custom header `X-Export-Secret` с произволна стойност, която ще зададеш в secrets (`AUTH_EXPORT_SECRET`). Двоен ключ — service_role key + наш секрет.
+- **Логика**: Чете директно от `auth.users` през service-role клиент с такъв SQL (през RPC функция, защото SDK-то не дава достъп до auth схемата):
 
-В началото на handler-а (след CORS preflight) добавяме проверка че caller-ът има `service_role` JWT:
+```sql
+-- SECURITY DEFINER функция в public схемата
+CREATE FUNCTION public.export_auth_users_admin()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE result jsonb;
+BEGIN
+  -- Само service_role може да я вика
+  IF auth.role() <> 'service_role' THEN
+    RAISE EXCEPTION 'Forbidden';
+  END IF;
 
-```ts
-const authHeader = req.headers.get('Authorization') ?? ''
-const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+  SELECT jsonb_agg(to_jsonb(u)) INTO result
+  FROM (
+    SELECT id, email, encrypted_password, email_confirmed_at,
+           raw_user_meta_data, raw_app_meta_data,
+           created_at, updated_at, last_sign_in_at,
+           confirmation_token, recovery_token,
+           email_change, email_change_token_new,
+           phone, phone_confirmed_at,
+           is_sso_user, role, aud, instance_id
+    FROM auth.users
+  ) u;
 
-// Decode JWT payload (middle segment) without verifying — verify_jwt=true
-// already guaranteed signature validity at the gateway.
-let role: string | undefined
-try {
-  const payload = JSON.parse(
-    atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
-  )
-  role = payload.role
-} catch {
-  // fall through
-}
-
-if (role !== 'service_role') {
-  return new Response(JSON.stringify({ error: 'Forbidden' }), {
-    status: 403,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-}
+  RETURN result;
+END;
+$$;
 ```
 
-`verify_jwt = true` остава в `config.toml` — gateway-ът пак валидира подписа, а ние допълнително проверяваме че role-ът е `service_role`.
+- Edge function-ът извиква `supabase.rpc('export_auth_users_admin')` и връща JSON-а.
+- Връща и `auth.identities` записите (за OAuth провайдъри ако има).
 
-**2. Проверка на викащите**
+---
 
-Преглед на codebase-а показва един клиентски caller:
-- `supabase-functions/stripe-webhook/index.ts` — извиква `send-transactional-email` чрез `supabase.functions.invoke()` със **service role клиент**, така че продължава да работи.
+## Стъпка 2 — Добавяне на secret `AUTH_EXPORT_SECRET`
 
-Трябва да потвърдя няма ли други `invoke('send-transactional-email')` от UI код. Ако има — те трябва или да минат през сървър-функция, или да бъдат премахнати. От бърз преглед: `donation-confirmation` се изпраща от `stripe-webhook` (server-side, OK).
+Чрез secrets tool ще те помоля да въведеш произволен дълъг низ (генерирай си с `openssl rand -hex 32` или просто измисли). Това е допълнителна защита освен service role key-а.
 
-**3. Без промени в `config.toml`** — `verify_jwt = true` остава.
+---
 
-## След имплементация
+## Стъпка 3 — Извикване и сваляне
 
-- Маркирам finding-а като fixed чрез scanner tool с обяснение.
-- Обновявам security memory: send-transactional-email е server-only; никога не го викай от UI.
+След deploy ще ти дам curl команда за теб (с твоя service role key + секрета):
 
-## Защо не премахваме функцията изцяло
+```bash
+curl -X POST 'https://zjzyybdvbgovnvftnfod.supabase.co/functions/v1/export-auth-users' \
+  -H "Authorization: Bearer <SERVICE_ROLE_KEY>" \
+  -H "X-Export-Secret: <твоя AUTH_EXPORT_SECRET>" \
+  -o auth_users_export.json
+```
 
-Тя е централната точка за всички app emails (donation confirmation и бъдещи) и се вика от Stripe webhook след успешно дарение. Просто я заключваме за external callers.
+Резултат: файл `auth_users_export.json` с всичките 8 потребителя + identities.
+
+Алтернативно мога да го извикам аз през тестовия tool и да ти запиша файла в `/mnt/documents/` за директно сваляне.
+
+---
+
+## Стъпка 4 — Import скрипт за новата инстанция
+
+Подготвям втори скрипт `import-auth-users.mjs` (Node.js, ще го пускаш на VM-то), който:
+1. Чете `auth_users_export.json`
+2. Свързва се директно към PostgreSQL на self-hosted Supabase
+3. Прави `INSERT ... ON CONFLICT (id) DO NOTHING` в `auth.users` и `auth.identities`
+4. **Запазва същите UUID-та** → всички FK-и в `public.profiles`, `public.campaigns.created_by`, `public.donations.donor_id`, `public.user_roles.user_id` ще работят без промяна
+5. Запазва оригиналните `encrypted_password` хешове → потребителите се логват със старите пароли
+
+---
+
+## Стъпка 5 — Cleanup (важно!)
+
+След успешен import:
+- Изтриваме edge function-а `export-auth-users`
+- DROP-ваме `public.export_auth_users_admin()` функцията
+- Премахваме secret-а `AUTH_EXPORT_SECRET`
+
+Това е чувствителен код — не остава в продукцията.
+
+---
+
+## Какво се прави сега
+
+При одобрение на плана (Implement) ще:
+1. Създам миграция за `export_auth_users_admin()` функцията
+2. Поискам от теб secret `AUTH_EXPORT_SECRET`
+3. Създам и deploy-на edge function-а
+4. Извикам го и ти запазя файла в `/mnt/documents/auth_users_export.json` за директно сваляне
+5. Подготвя `import-auth-users.mjs` за VM-то
+
+---
+
+## Какво НЕ влиза в този план (отделни сесии)
+
+- Restore на `full.dump` в Coolify Postgres (вече го обсъждахме)
+- Storage файлове (rclone S3→S3)
+- Edge functions deploy към новата инстанция
+- Secrets и auth config в Coolify
+
+Ще ги направим един по един в отделни заявки.
